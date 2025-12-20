@@ -8,7 +8,6 @@ import {
 import { Request, Response } from 'express';
 import { PrismaModule } from './prisma/prisma.module';
 import { CatalogModule } from './catalog/catalog.module';
-import { MarketplaceModule } from './marketplace/marketplace.module';
 import { ProductsModule } from './products/products.module';
 import { StoreModule } from './store/store.module';
 import { ImpactModule } from './impact/impact.module';
@@ -53,7 +52,6 @@ import './graphql/enums';
 
     // Feature modules
     CatalogModule,
-    MarketplaceModule,
     ProductsModule,
     StoreModule,
     ImpactModule,

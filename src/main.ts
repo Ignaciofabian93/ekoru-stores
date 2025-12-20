@@ -28,7 +28,7 @@ async function bootstrap() {
   const port = configService.get<number>('PORT') || 4002;
   await app.listen(port);
 
-  logger.log(`Products subgraph is running on port ${port}`);
+  logger.log(`Stores subgraph is running on port ${port}`);
   logger.log(`GraphQL Playground: http://localhost:${port}/graphql`);
 }
 

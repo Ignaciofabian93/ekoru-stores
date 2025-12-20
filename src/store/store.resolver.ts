@@ -33,7 +33,10 @@ export class StoreResolver {
     return this.storeService.getStoreCategory(Number(id), page, pageSize);
   }
 
-  @Query(() => StoreSubCategory, { nullable: true, name: 'getStoreSubCategory' })
+  @Query(() => StoreSubCategory, {
+    nullable: true,
+    name: 'getStoreSubCategory',
+  })
   async getStoreSubCategory(@Args('id', { type: () => ID }) id: string) {
     return this.storeService.getStoreSubCategory(Number(id));
   }

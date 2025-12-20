@@ -1,7 +1,7 @@
 {
-  "name": "ekoru-products",
+  "name": "ekoru-stores",
   "version": "0.0.1",
-  "description": "Ekoru Products Subgraph - NestJS GraphQL Federation",
+  "description": "Ekoru Stores Subgraph - NestJS GraphQL Federation",
   "author": "Ignacio Rodríguez Rulas - EKORU CTO",
   "private": true,
   "license": "UNLICENSED",

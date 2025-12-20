@@ -49,9 +49,7 @@ export class CatalogService {
       if (error instanceof NotFoundError) {
         throw error;
       }
-      throw new InternalServerError(
-        'Error al obtener el catálogo del mercado',
-      );
+      throw new InternalServerError('Error al obtener el catálogo del mercado');
     }
   }
 

@@ -64,11 +64,7 @@ export class StoreService {
     }
   }
 
-  async getStoreCategory(
-    id: number,
-    page: number = 1,
-    pageSize: number = 20,
-  ) {
+  async getStoreCategory(id: number, page: number = 1, pageSize: number = 20) {
     try {
       const parsedId = Number(id);
       const { skip, take } = calculatePrismaParams(page, pageSize);
@@ -140,7 +136,12 @@ export class StoreService {
 
       return {
         ...category,
-        products: createPaginatedResponse(products, page, pageSize, totalProductsCount),
+        products: createPaginatedResponse(
+          products,
+          page,
+          pageSize,
+          totalProductsCount,
+        ),
       };
     } catch (error) {
       this.logger.error(
