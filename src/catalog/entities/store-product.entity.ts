@@ -2,7 +2,16 @@ import { ObjectType, Field, ID, Int, Float, Directive } from '@nestjs/graphql';
 import { Badge } from '../../graphql/enums';
 import { StoreSubCategory } from './store-subcategory.entity';
 import { ProductVariant } from './product-variant.entity';
-import { Seller } from './product.entity';
+
+// Federated Seller type - external reference
+@ObjectType()
+@Directive('@key(fields: "id")')
+@Directive('@extends')
+export class Seller {
+  @Field(() => ID)
+  @Directive('@external')
+  id: string;
+}
 
 @ObjectType()
 @Directive('@key(fields: "id")')

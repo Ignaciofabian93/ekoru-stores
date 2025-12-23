@@ -114,28 +114,6 @@ export class ProductsResolver {
     );
   }
 
-  @Query(() => StoreProductConnection, {
-    nullable: true,
-    name: 'searchProducts',
-  })
-  async searchProducts(
-    @Args('searchTerm') searchTerm: string,
-    @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
-    @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
-    @Args('filter', { type: () => ProductFilterInput, nullable: true })
-    filter?: ProductFilterInput,
-    @Args('sort', { type: () => ProductSortInput, nullable: true })
-    sort?: ProductSortInput,
-  ) {
-    return this.productsService.searchProducts(
-      searchTerm,
-      page,
-      pageSize,
-      filter,
-      sort,
-    );
-  }
-
   @Mutation(() => StoreProduct, { nullable: true, name: 'addProduct' })
   async addProduct(
     @Args('input') input: AddProductInput,
@@ -167,7 +145,7 @@ export class ProductsResolver {
 
   // Field resolvers
   @ResolveField(() => StoreSubCategory, { nullable: true })
-  async storeSubCategory(@Parent() product: StoreProduct) {
+  storeSubCategory(@Parent() product: StoreProduct) {
     if (product.storeSubCategory) {
       return product.storeSubCategory;
     }
@@ -175,7 +153,7 @@ export class ProductsResolver {
   }
 
   @ResolveField(() => [ProductVariant], { nullable: true })
-  async productVariants(@Parent() product: StoreProduct) {
+  productVariants(@Parent() product: StoreProduct) {
     if (product.productVariants) {
       return product.productVariants;
     }

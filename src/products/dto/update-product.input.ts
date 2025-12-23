@@ -124,19 +124,4 @@ export class UpdateProductInput {
   @IsOptional()
   @IsString()
   conditionDescription?: string;
-
-  @Field(() => Int, { nullable: true })
-  @IsOptional()
-  @IsNumber()
-  sustainabilityScore?: number;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  materialComposition?: string;
-
-  @Field(() => Float, { nullable: true })
-  @IsOptional()
-  @IsNumber()
-  recycledContent?: number;
 }

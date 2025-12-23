@@ -1,25 +1,25 @@
 services:
-  ekoru-products:
-    image: ekoru-products:prod
+  ekoru-stores:
+    image: ekoru-stores:prod
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
-    container_name: ekoru-products
+    container_name: ekoru-stores
     env_file:
       - .env.prod
     ports:
-      - '4102:4002'
+      - '4103:4003'
     networks:
       - ekoru-network
     deploy:
       resources:
         limits:
-          cpus: '0.75' # Maximum 0.75 CPU cores (less for QA)
-          memory: 384M # Maximum 384MB RAM (less for QA)
+          cpus: '2.0' # Maximum 2 CPU cores (production environment)
+          memory: 1G # Maximum 1GB RAM (production environment)
         reservations:
-          cpus: '0.15' # Minimum 0.15 CPU cores reserved
-          memory: 192M # Minimum 192MB RAM reserved
+          cpus: '0.5' # Minimum 0.5 CPU cores reserved
+          memory: 512M # Minimum 512MB RAM reserved
     healthcheck:
       test:
         [
@@ -28,7 +28,7 @@ services:
           '--quiet',
           '--tries=1',
           '--spider',
-          'http://localhost:4102/health',
+          'http://localhost:4103/health',
         ]
       interval: 30s
       timeout: 10s
