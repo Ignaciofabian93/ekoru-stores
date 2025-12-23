@@ -1,7 +1,35 @@
-version: "0.2"
+version: '0.2'
 ignorePaths: []
 dictionaryDefinitions: []
 dictionaries: []
-words: ['nestjs', 'ekoru']
+words:
+  - ATTENDTOEVENT
+  - ATTENDTOWORKSHOP
+  - autoincrement
+  - chilean
+  - Conekta
+  - CUIT
+  - Culqi
+  - datasource
+  - ekoru
+  - Khipu
+  - KHIPU
+  - nestjs
+  - Niubiz
+  - postgresql
+  - STOREPURCHASE
+  - subcategoría
+  - Subcategoría
+  - subcategorias
+  - subcategorías
+  - TIKTOK
+  - Transbank
+  - upcycled
+  - Upcycling
+  - UPCYCLING
+  - uuid
+  - Webpay
+  - WEBPAY
+  - WHATSAPP
 ignoreWords: []
 import: []

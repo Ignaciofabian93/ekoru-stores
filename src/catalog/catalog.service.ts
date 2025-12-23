@@ -6,52 +6,10 @@ import {
 } from '../common/exceptions/graphql.exceptions';
 
 @Injectable()
-export class CatalogService {
-  private readonly logger = new Logger(CatalogService.name);
+export class StoreCatalogService {
+  private readonly logger = new Logger(StoreCatalogService.name);
 
   constructor(private readonly prisma: PrismaService) {}
-
-  async getMarketCatalog() {
-    try {
-      const departments = await this.prisma.department.findMany({
-        select: {
-          id: true,
-          departmentName: true,
-          href: true,
-          departmentCategory: {
-            select: {
-              id: true,
-              departmentCategoryName: true,
-              href: true,
-              productCategory: {
-                select: {
-                  id: true,
-                  productCategoryName: true,
-                  departmentCategoryId: true,
-                  href: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          departmentName: 'asc',
-        },
-      });
-
-      if (!departments.length) {
-        throw new NotFoundError('No se encontraron departamentos');
-      }
-
-      return departments;
-    } catch (error) {
-      this.logger.error('Error al obtener el catálogo del mercado:', error);
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
-      throw new InternalServerError('Error al obtener el catálogo del mercado');
-    }
-  }
 
   async getStoreCatalog() {
     try {

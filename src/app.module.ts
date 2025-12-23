@@ -7,7 +7,7 @@ import {
 } from '@nestjs/apollo';
 import { Request, Response } from 'express';
 import { PrismaModule } from './prisma/prisma.module';
-import { CatalogModule } from './catalog/catalog.module';
+import { StoreCatalogModule } from './catalog/catalog.module';
 import { ProductsModule } from './products/products.module';
 import { StoreModule } from './store/store.module';
 import { ImpactModule } from './impact/impact.module';
@@ -51,9 +51,9 @@ import './graphql/enums';
     PrismaModule,
 
     // Feature modules
-    CatalogModule,
-    ProductsModule,
+    StoreCatalogModule,
     StoreModule,
+    ProductsModule,
     ImpactModule,
   ],
   providers: [JSONScalar],

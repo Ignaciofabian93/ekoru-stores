@@ -1,4 +1,4 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
+import { InputType, Field, Int, Float } from '@nestjs/graphql';
 import {
   IsOptional,
   IsString,
@@ -7,19 +7,10 @@ import {
   IsBoolean,
   Min,
 } from 'class-validator';
-import { Badge, ProductCondition } from '../../graphql/enums';
+import { Badge } from '../../graphql/enums';
 
 @InputType()
 export class AddProductInput {
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  color?: string;
-
-  @Field()
-  @IsString()
-  brand: string;
-
   @Field()
   @IsString()
   name: string;
@@ -31,21 +22,37 @@ export class AddProductInput {
   @Field(() => Int)
   @IsNumber()
   @Min(0)
-  price: number;
+  stock: number;
 
-  @Field(() => [String])
-  @IsArray()
-  images: string[];
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  barcode?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
+  @Field(() => Int)
+  @IsNumber()
+  @Min(0)
+  price: number;
 
   @Field(() => Boolean, { nullable: true })
   @IsOptional()
   @IsBoolean()
-  isExchangeable?: boolean;
+  hasOffer?: boolean;
 
-  @Field(() => [String], { nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  offerPrice?: number;
+
+  @Field(() => [String])
   @IsArray()
-  interests?: string[];
+  images: string[];
 
   @Field(() => Boolean, { nullable: true })
   @IsOptional()
@@ -57,20 +64,37 @@ export class AddProductInput {
   @IsArray()
   badges?: Badge[];
 
-  @Field(() => Int)
-  @IsNumber()
-  productCategoryId: number;
-
-  @Field()
-  @IsString()
-  sellerId: string;
-
-  @Field(() => ProductCondition, { nullable: true })
+  @Field(() => String, { nullable: true })
   @IsOptional()
-  condition?: ProductCondition;
+  @IsString()
+  brand?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  conditionDescription?: string;
+  color?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  materialComposition?: string;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  recycledContent?: number;
+
+  @Field(() => Int)
+  @IsNumber()
+  subcategoryId: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  sustainabilityScore?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  carbonFootprint?: number;
 }

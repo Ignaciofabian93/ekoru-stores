@@ -7,7 +7,7 @@ import {
   IsBoolean,
   Min,
 } from 'class-validator';
-import { Badge, ProductCondition } from '../../graphql/enums';
+import { Badge } from '../../graphql/enums';
 
 @InputType()
 export class UpdateProductInput {
@@ -73,16 +73,6 @@ export class UpdateProductInput {
   @Field(() => Boolean, { nullable: true })
   @IsOptional()
   @IsBoolean()
-  isExchangeable?: boolean;
-
-  @Field(() => [String], { nullable: true })
-  @IsOptional()
-  @IsArray()
-  interests?: string[];
-
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  @IsBoolean()
   isActive?: boolean;
 
   @Field(() => [Badge], { nullable: true })
@@ -90,14 +80,45 @@ export class UpdateProductInput {
   @IsArray()
   badges?: Badge[];
 
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  materialComposition?: string;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  recycledContent?: number;
+
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsNumber()
-  productCategoryId?: number;
+  subcategoryId?: number;
 
-  @Field(() => ProductCondition, { nullable: true })
+  @Field(() => Int, { nullable: true })
   @IsOptional()
-  condition?: ProductCondition;
+  @IsNumber()
+  sustainabilityScore?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  carbonFootprint?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  ratings?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  ratingCount?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  reviewsNumber?: number;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

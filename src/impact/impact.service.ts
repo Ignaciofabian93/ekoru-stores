@@ -189,4 +189,73 @@ export class ImpactService {
       throw new InternalServerError('Error al calcular el impacto ambiental');
     }
   }
+
+  async calculateSubcategoryImpact(subcategoryId: number) {
+    try {
+      const subcategory = await this.prisma.storeSubCategory.findUnique({
+        where: { id: subcategoryId },
+        include: {
+          materials: {
+            include: {
+              material: true,
+            },
+          },
+        },
+      });
+
+      if (!subcategory) {
+        throw new NotFoundError('Subcategoría no encontrada.');
+      }
+
+      if (!subcategory.materials.length) {
+        return {
+          totalCo2SavingsKG: 0,
+          totalWaterSavingsLT: 0,
+          materialBreakdown: [],
+        };
+      }
+
+      let totalCo2SavingsKG = 0;
+      let totalWaterSavingsLT = 0;
+
+      const materialBreakdown = subcategory.materials.map((mat) => {
+        const materialWeightKG =
+          mat.unit === 'percentage' ? mat.quantity / 100 : mat.quantity;
+
+        const co2SavingsKG =
+          materialWeightKG * mat.material.estimatedCo2SavingsKG;
+        const waterSavingsLT =
+          materialWeightKG * mat.material.estimatedWaterSavingsLT;
+
+        totalCo2SavingsKG += co2SavingsKG;
+        totalWaterSavingsLT += waterSavingsLT;
+
+        return {
+          materialType: mat.material.materialType,
+          sourceMaterial: mat.sourceMaterial,
+          percentage: mat.unit === 'percentage' ? mat.quantity : null,
+          weightKG: materialWeightKG,
+          co2SavingsKG,
+          waterSavingsLT,
+          recycledPercentage: mat.recycledPercentage,
+          isRecycled: mat.isRecycled,
+        };
+      });
+
+      return {
+        totalCo2SavingsKG: parseFloat(totalCo2SavingsKG.toFixed(2)),
+        totalWaterSavingsLT: parseFloat(totalWaterSavingsLT.toFixed(2)),
+        materialBreakdown,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Error al calcular el impacto ambiental de subcategoría:',
+        error,
+      );
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      throw new InternalServerError('Error al calcular el impacto ambiental');
+    }
+  }
 }

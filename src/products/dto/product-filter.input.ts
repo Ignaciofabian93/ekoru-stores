@@ -1,4 +1,4 @@
-import { InputType, Field, Int } from '@nestjs/graphql';
+import { InputType, Field, Int, Float } from '@nestjs/graphql';
 import {
   IsOptional,
   IsString,
@@ -6,7 +6,7 @@ import {
   IsArray,
   IsBoolean,
 } from 'class-validator';
-import { Badge, ProductCondition } from '../../graphql/enums';
+import { Badge } from '../../graphql/enums';
 
 @InputType()
 export class ProductFilterInput {
@@ -30,11 +30,6 @@ export class ProductFilterInput {
   @IsBoolean()
   isActive?: boolean;
 
-  @Field(() => Boolean, { nullable: true })
-  @IsOptional()
-  @IsBoolean()
-  isExchangeable?: boolean;
-
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
@@ -43,21 +38,12 @@ export class ProductFilterInput {
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsNumber()
-  productCategoryId?: number;
+  subcategoryId?: number;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsNumber()
-  departmentCategoryId?: number;
-
-  @Field(() => Int, { nullable: true })
-  @IsOptional()
-  @IsNumber()
-  departmentId?: number;
-
-  @Field(() => ProductCondition, { nullable: true })
-  @IsOptional()
-  condition?: ProductCondition;
+  storeCategoryId?: number;
 
   @Field(() => [Badge], { nullable: true })
   @IsOptional()
@@ -74,8 +60,28 @@ export class ProductFilterInput {
   @IsString()
   color?: string;
 
-  @Field(() => [String], { nullable: true })
+  @Field(() => Boolean, { nullable: true })
   @IsOptional()
-  @IsArray()
-  interests?: string[];
+  @IsBoolean()
+  hasOffer?: boolean;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  minStock?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  minRating?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  minRecycledContent?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  minSustainabilityScore?: number;
 }

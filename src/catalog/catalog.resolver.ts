@@ -1,15 +1,10 @@
 import { Resolver, Query } from '@nestjs/graphql';
-import { CatalogService } from './catalog.service';
-import { Department, StoreCategory } from './entities';
+import { StoreCatalogService } from './catalog.service';
+import { StoreCategory } from './entities';
 
 @Resolver()
-export class CatalogResolver {
-  constructor(private readonly catalogService: CatalogService) {}
-
-  @Query(() => [Department], { nullable: true, name: 'marketCatalog' })
-  async getMarketCatalog() {
-    return this.catalogService.getMarketCatalog();
-  }
+export class StoreCatalogResolver {
+  constructor(private readonly catalogService: StoreCatalogService) {}
 
   @Query(() => [StoreCategory], { nullable: true, name: 'storeCatalog' })
   async getStoreCatalog() {

@@ -20,15 +20,25 @@ import {
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
-  private readonly productInclude = {
-    productCategory: {
+  private readonly storeProductInclude = {
+    storeSubCategory: {
       include: {
-        materials: true,
-        departmentCategory: {
+        storeCategory: true,
+        materials: {
           include: {
-            department: true,
+            material: true,
           },
         },
+      },
+    },
+    productVariant: true,
+    seller: {
+      select: {
+        id: true,
+        email: true,
+        sellerType: true,
+        isActive: true,
+        isVerified: true,
       },
     },
   };
@@ -54,27 +64,15 @@ export class ProductsService {
     }
 
     if (filter.isActive !== undefined) where.isActive = filter.isActive;
-    if (filter.isExchangeable !== undefined)
-      where.isExchangeable = filter.isExchangeable;
 
     if (filter.sellerId) where.sellerId = filter.sellerId;
-    if (filter.productCategoryId)
-      where.productCategoryId = filter.productCategoryId;
+    if (filter.subcategoryId) where.subcategoryId = filter.subcategoryId;
 
-    if (filter.departmentCategoryId) {
-      where.productCategory = {
-        departmentCategoryId: filter.departmentCategoryId,
+    if (filter.storeCategoryId) {
+      where.storeSubCategory = {
+        storeCategoryId: filter.storeCategoryId,
       };
     }
-    if (filter.departmentId) {
-      where.productCategory = {
-        departmentCategory: {
-          departmentId: filter.departmentId,
-        },
-      };
-    }
-
-    if (filter.condition) where.condition = filter.condition;
 
     if (filter.brand) {
       where.brand = {
@@ -94,10 +92,23 @@ export class ProductsService {
         hasSome: filter.badges,
       };
     }
-    if (filter.interests && filter.interests.length > 0) {
-      where.interests = {
-        hasSome: filter.interests,
-      };
+
+    if (filter.hasOffer !== undefined) where.hasOffer = filter.hasOffer;
+
+    if (filter.minStock !== undefined) {
+      where.stock = { gte: filter.minStock };
+    }
+
+    if (filter.minRating !== undefined) {
+      where.ratings = { gte: filter.minRating };
+    }
+
+    if (filter.minRecycledContent !== undefined) {
+      where.recycledContent = { gte: filter.minRecycledContent };
+    }
+
+    if (filter.minSustainabilityScore !== undefined) {
+      where.sustainabilityScore = { gte: filter.minSustainabilityScore };
     }
 
     return where;
@@ -110,6 +121,8 @@ export class ProductsService {
       CREATED_AT: 'createdAt',
       PRICE: 'price',
       NAME: 'name',
+      RATING: 'ratings',
+      STOCK: 'stock',
     };
 
     const field = fieldMap[sort.field] || 'createdAt';
@@ -129,14 +142,14 @@ export class ProductsService {
       const where = this.buildProductWhereClause(filter);
       const orderBy = this.buildProductOrderByClause(sort);
 
-      const totalCount = await this.prisma.product.count({ where });
+      const totalCount = await this.prisma.storeProduct.count({ where });
 
-      const products = await this.prisma.product.findMany({
+      const products = await this.prisma.storeProduct.findMany({
         where,
         orderBy,
         skip,
         take,
-        include: this.productInclude,
+        include: this.storeProductInclude,
       });
 
       return createPaginatedResponse(products, page, pageSize, totalCount);
@@ -148,9 +161,9 @@ export class ProductsService {
 
   async getProductById(id: number) {
     try {
-      const product = await this.prisma.product.findUnique({
+      const product = await this.prisma.storeProduct.findUnique({
         where: { id: Number(id) },
-        include: this.productInclude,
+        include: this.storeProductInclude,
       });
 
       if (!product) {
@@ -181,14 +194,14 @@ export class ProductsService {
 
       where.sellerId = sellerId;
 
-      const totalCount = await this.prisma.product.count({ where });
+      const totalCount = await this.prisma.storeProduct.count({ where });
 
-      const products = await this.prisma.product.findMany({
+      const products = await this.prisma.storeProduct.findMany({
         where,
         orderBy,
         skip,
         take,
-        include: this.productInclude,
+        include: this.storeProductInclude,
       });
 
       return createPaginatedResponse(products, page, pageSize, totalCount);
@@ -203,8 +216,8 @@ export class ProductsService {
     }
   }
 
-  async getProductsByCategory(
-    productCategoryId: number,
+  async getProductsBySubcategory(
+    subcategoryId: number,
     page: number = 1,
     pageSize: number = 20,
     filter?: ProductFilterInput,
@@ -215,60 +228,58 @@ export class ProductsService {
       const where = this.buildProductWhereClause(filter);
       const orderBy = this.buildProductOrderByClause(sort);
 
-      where.productCategoryId = productCategoryId;
+      where.subcategoryId = subcategoryId;
 
-      const totalCount = await this.prisma.product.count({ where });
+      const totalCount = await this.prisma.storeProduct.count({ where });
 
-      const products = await this.prisma.product.findMany({
+      const products = await this.prisma.storeProduct.findMany({
         where,
         orderBy,
         skip,
         take,
-        include: this.productInclude,
-      });
-
-      return createPaginatedResponse(products, page, pageSize, totalCount);
-    } catch (error) {
-      this.logger.error('Error al obtener los productos por categoría:', error);
-      throw new InternalServerError(
-        'Error al obtener los productos por categoría',
-      );
-    }
-  }
-
-  async getExchangeableProducts(
-    page: number = 1,
-    pageSize: number = 20,
-    filter?: ProductFilterInput,
-    sort?: ProductSortInput,
-  ) {
-    try {
-      const { skip, take } = calculatePrismaParams(page, pageSize);
-      const where = this.buildProductWhereClause(filter);
-      const orderBy = this.buildProductOrderByClause(sort);
-
-      where.isExchangeable = true;
-      where.isActive = true;
-
-      const totalCount = await this.prisma.product.count({ where });
-
-      const products = await this.prisma.product.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: this.productInclude,
+        include: this.storeProductInclude,
       });
 
       return createPaginatedResponse(products, page, pageSize, totalCount);
     } catch (error) {
       this.logger.error(
-        'Error al obtener los productos intercambiables:',
+        'Error al obtener los productos por subcategoría:',
         error,
       );
       throw new InternalServerError(
-        'Error al obtener los productos intercambiables',
+        'Error al obtener los productos por subcategoría',
       );
+    }
+  }
+
+  async getProductsOnOffer(
+    page: number = 1,
+    pageSize: number = 20,
+    filter?: ProductFilterInput,
+    sort?: ProductSortInput,
+  ) {
+    try {
+      const { skip, take } = calculatePrismaParams(page, pageSize);
+      const where = this.buildProductWhereClause(filter);
+      const orderBy = this.buildProductOrderByClause(sort);
+
+      where.hasOffer = true;
+      where.isActive = true;
+
+      const totalCount = await this.prisma.storeProduct.count({ where });
+
+      const products = await this.prisma.storeProduct.findMany({
+        where,
+        skip,
+        take,
+        orderBy,
+        include: this.storeProductInclude,
+      });
+
+      return createPaginatedResponse(products, page, pageSize, totalCount);
+    } catch (error) {
+      this.logger.error('Error al obtener los productos en oferta:', error);
+      throw new InternalServerError('Error al obtener los productos en oferta');
     }
   }
 
@@ -303,16 +314,22 @@ export class ProductsService {
             mode: 'insensitive',
           },
         },
+        {
+          materialComposition: {
+            contains: searchTerm,
+            mode: 'insensitive',
+          },
+        },
       ];
 
-      const totalCount = await this.prisma.product.count({ where });
+      const totalCount = await this.prisma.storeProduct.count({ where });
 
-      const products = await this.prisma.product.findMany({
+      const products = await this.prisma.storeProduct.findMany({
         where,
         orderBy,
         skip,
         take,
-        include: this.productInclude,
+        include: this.storeProductInclude,
       });
 
       return createPaginatedResponse(products, page, pageSize, totalCount);
@@ -328,12 +345,13 @@ export class ProductsService {
         throw new UnAuthorizedError('No autorizado');
       }
 
-      const product = await this.prisma.product.create({
+      const product = await this.prisma.storeProduct.create({
         data: {
           ...input,
           sellerId,
           updatedAt: new Date(),
         },
+        include: this.storeProductInclude,
       });
 
       if (!product) {
@@ -359,7 +377,7 @@ export class ProductsService {
       const { id, ...data } = input;
       const parsedId = Number(id);
 
-      const existingProduct = await this.prisma.product.findUnique({
+      const existingProduct = await this.prisma.storeProduct.findUnique({
         where: { id: parsedId },
         select: { sellerId: true },
       });
@@ -374,12 +392,13 @@ export class ProductsService {
         );
       }
 
-      const product = await this.prisma.product.update({
+      const product = await this.prisma.storeProduct.update({
         where: { id: parsedId },
         data: {
           ...data,
           updatedAt: new Date(),
         },
+        include: this.storeProductInclude,
       });
 
       return product;
@@ -397,7 +416,7 @@ export class ProductsService {
 
   async deleteProduct(id: number) {
     try {
-      const product = await this.prisma.product.update({
+      const product = await this.prisma.storeProduct.update({
         where: { id: Number(id) },
         data: {
           deletedAt: new Date(),
@@ -421,7 +440,7 @@ export class ProductsService {
         throw new UnAuthorizedError('No autorizado');
       }
 
-      const existingProduct = await this.prisma.product.findUnique({
+      const existingProduct = await this.prisma.storeProduct.findUnique({
         where: { id: Number(id) },
         select: { sellerId: true, isActive: true },
       });
@@ -436,12 +455,13 @@ export class ProductsService {
         );
       }
 
-      const product = await this.prisma.product.update({
+      const product = await this.prisma.storeProduct.update({
         where: { id: Number(id) },
         data: {
           isActive: !existingProduct.isActive,
           updatedAt: new Date(),
         },
+        include: this.storeProductInclude,
       });
 
       return product;

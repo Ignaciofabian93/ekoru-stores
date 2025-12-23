@@ -12,11 +12,12 @@ import { ProductsService } from './products.service';
 import { ImpactService } from '../impact/impact.service';
 import { CurrentSeller } from '../common/decorators';
 import {
-  Product,
-  ProductConnection,
-  ProductCategory,
-  Seller,
+  StoreProduct,
+  StoreProductConnection,
+  StoreSubCategory,
+  ProductVariant,
   EnvironmentalImpact,
+  Seller,
 } from '../catalog/entities';
 import {
   AddProductInput,
@@ -25,19 +26,19 @@ import {
   ProductSortInput,
 } from './dto';
 
-@Resolver(() => Product)
+@Resolver(() => StoreProduct)
 export class ProductsResolver {
   constructor(
     private readonly productsService: ProductsService,
     private readonly impactService: ImpactService,
   ) {}
 
-  @Query(() => Product, { nullable: true, name: 'getProductById' })
+  @Query(() => StoreProduct, { nullable: true, name: 'getProductById' })
   async getProductById(@Args('id', { type: () => ID }) id: string) {
     return this.productsService.getProductById(Number(id));
   }
 
-  @Query(() => ProductConnection, { nullable: true, name: 'getProducts' })
+  @Query(() => StoreProductConnection, { nullable: true, name: 'getProducts' })
   async getProducts(
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
@@ -49,7 +50,7 @@ export class ProductsResolver {
     return this.productsService.getProducts(page, pageSize, filter, sort);
   }
 
-  @Query(() => ProductConnection, {
+  @Query(() => StoreProductConnection, {
     nullable: true,
     name: 'getProductsBySeller',
   })
@@ -71,12 +72,12 @@ export class ProductsResolver {
     );
   }
 
-  @Query(() => ProductConnection, {
+  @Query(() => StoreProductConnection, {
     nullable: true,
-    name: 'getProductsByCategory',
+    name: 'getProductsBySubcategory',
   })
-  async getProductsByCategory(
-    @Args('productCategoryId', { type: () => ID }) productCategoryId: string,
+  async getProductsBySubcategory(
+    @Args('subcategoryId', { type: () => ID }) subcategoryId: string,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
     @Args('filter', { type: () => ProductFilterInput, nullable: true })
@@ -84,8 +85,8 @@ export class ProductsResolver {
     @Args('sort', { type: () => ProductSortInput, nullable: true })
     sort?: ProductSortInput,
   ) {
-    return this.productsService.getProductsByCategory(
-      Number(productCategoryId),
+    return this.productsService.getProductsBySubcategory(
+      Number(subcategoryId),
       page,
       pageSize,
       filter,
@@ -93,11 +94,11 @@ export class ProductsResolver {
     );
   }
 
-  @Query(() => ProductConnection, {
+  @Query(() => StoreProductConnection, {
     nullable: true,
-    name: 'getExchangeableProducts',
+    name: 'getProductsOnOffer',
   })
-  async getExchangeableProducts(
+  async getProductsOnOffer(
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
     @Args('filter', { type: () => ProductFilterInput, nullable: true })
@@ -105,7 +106,7 @@ export class ProductsResolver {
     @Args('sort', { type: () => ProductSortInput, nullable: true })
     sort?: ProductSortInput,
   ) {
-    return this.productsService.getExchangeableProducts(
+    return this.productsService.getProductsOnOffer(
       page,
       pageSize,
       filter,
@@ -113,7 +114,10 @@ export class ProductsResolver {
     );
   }
 
-  @Query(() => ProductConnection, { nullable: true, name: 'searchProducts' })
+  @Query(() => StoreProductConnection, {
+    nullable: true,
+    name: 'searchProducts',
+  })
   async searchProducts(
     @Args('searchTerm') searchTerm: string,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
@@ -132,7 +136,7 @@ export class ProductsResolver {
     );
   }
 
-  @Mutation(() => Product, { nullable: true, name: 'addProduct' })
+  @Mutation(() => StoreProduct, { nullable: true, name: 'addProduct' })
   async addProduct(
     @Args('input') input: AddProductInput,
     @CurrentSeller() sellerId?: string,
@@ -140,7 +144,7 @@ export class ProductsResolver {
     return this.productsService.addProduct(input, sellerId);
   }
 
-  @Mutation(() => Product, { nullable: true, name: 'updateProduct' })
+  @Mutation(() => StoreProduct, { nullable: true, name: 'updateProduct' })
   async updateProduct(
     @Args('input') input: UpdateProductInput,
     @CurrentSeller() sellerId?: string,
@@ -148,12 +152,12 @@ export class ProductsResolver {
     return this.productsService.updateProduct(input, sellerId);
   }
 
-  @Mutation(() => Product, { nullable: true, name: 'deleteProduct' })
+  @Mutation(() => StoreProduct, { nullable: true, name: 'deleteProduct' })
   async deleteProduct(@Args('id', { type: () => ID }) id: string) {
     return this.productsService.deleteProduct(Number(id));
   }
 
-  @Mutation(() => Product, { nullable: true, name: 'toggleProductActive' })
+  @Mutation(() => StoreProduct, { nullable: true, name: 'toggleProductActive' })
   async toggleProductActive(
     @Args('id', { type: () => ID }) id: string,
     @CurrentSeller() sellerId?: string,
@@ -162,16 +166,24 @@ export class ProductsResolver {
   }
 
   // Field resolvers
-  @ResolveField(() => ProductCategory, { nullable: true })
-  async productCategory(@Parent() product: Product) {
-    if (product.productCategory) {
-      return product.productCategory;
+  @ResolveField(() => StoreSubCategory, { nullable: true })
+  async storeSubCategory(@Parent() product: StoreProduct) {
+    if (product.storeSubCategory) {
+      return product.storeSubCategory;
     }
     return null;
   }
 
+  @ResolveField(() => [ProductVariant], { nullable: true })
+  async productVariants(@Parent() product: StoreProduct) {
+    if (product.productVariants) {
+      return product.productVariants;
+    }
+    return [];
+  }
+
   @ResolveField(() => Seller, { nullable: true })
-  seller(@Parent() product: Product) {
+  seller(@Parent() product: StoreProduct) {
     if (product.seller) {
       return product.seller;
     }
@@ -180,10 +192,13 @@ export class ProductsResolver {
   }
 
   @ResolveField(() => EnvironmentalImpact, { nullable: true })
-  async environmentalImpact(@Parent() product: Product) {
+  async environmentalImpact(@Parent() product: StoreProduct) {
     try {
-      return await this.impactService.calculateCategoryImpact(
-        product.productCategoryId,
+      // Calculate impact based on subcategory materials
+      if (!product.subcategoryId) return null;
+
+      return await this.impactService.calculateSubcategoryImpact(
+        product.subcategoryId,
       );
     } catch (error) {
       console.error('Error calculating environmental impact:', error);
