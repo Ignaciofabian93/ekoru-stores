@@ -10,30 +10,6 @@ import { Co2ImpactMessage, WaterImpactMessage } from './entities';
 export class ImpactResolver {
   constructor(private readonly impactService: ImpactService) {}
 
-  @Query(() => [MaterialImpactEstimate], { name: 'getMaterialImpacts' })
-  async getMaterialImpacts() {
-    return this.impactService.getMaterialImpacts();
-  }
-
-  @Query(() => [Co2ImpactMessage], { name: 'getCo2ImpactMessages' })
-  async getCo2ImpactMessages() {
-    return this.impactService.getAllCo2ImpactMessages();
-  }
-
-  @Query(() => [WaterImpactMessage], { name: 'getWaterImpactMessages' })
-  async getWaterImpactMessages() {
-    return this.impactService.getAllWaterImpactMessages();
-  }
-
-  @Query(() => EnvironmentalImpact, {
-    nullable: true,
-    name: 'calculateProductImpact',
-  })
-  async calculateProductImpact(
-    @Args('productCategoryId', { type: () => ID }) productCategoryId: string,
-  ) {
-    return this.impactService.calculateCategoryImpact(
-      Number(productCategoryId),
-    );
-  }
+  // Impact queries are now only in marketplace subgraph to avoid duplication
+  // Store products can still access impact data through field resolvers
 }

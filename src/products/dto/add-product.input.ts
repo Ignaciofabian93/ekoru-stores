@@ -19,10 +19,21 @@ export class AddProductInput {
   @IsString()
   description: string;
 
-  @Field(() => Int)
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  stock: number;
+  stock?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  productCategoryId?: number;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  sellerId?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -84,9 +95,10 @@ export class AddProductInput {
   @IsNumber()
   recycledContent?: number;
 
-  @Field(() => Int)
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
   @IsNumber()
-  subcategoryId: number;
+  subcategoryId?: number;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()
