@@ -289,9 +289,13 @@ export class ProductsService {
         throw new UnAuthorizedError('No autorizado');
       }
 
+      const { subcategoryId } = input;
+      const parsedSubcategoryId = Number(subcategoryId);
+
       const product = await this.prisma.storeProduct.create({
         data: {
           ...input,
+          subcategoryId: parsedSubcategoryId,
           sellerId,
           updatedAt: new Date(),
         },

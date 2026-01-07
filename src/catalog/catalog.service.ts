@@ -22,6 +22,8 @@ export class StoreCatalogService {
             select: {
               id: true,
               subCategory: true,
+              storeCategoryId: true,
+              href: true,
             },
           },
         },
