@@ -1,4 +1,5 @@
 import { registerEnumType } from '@nestjs/graphql';
+import { Language } from '@prisma/client';
 
 export enum Badge {
   POPULAR = 'POPULAR',
@@ -31,16 +32,6 @@ export enum Badge {
   IN_MID_POINT_PICKUP = 'IN_MID_POINT_PICKUP',
 }
 
-export enum ProductCondition {
-  NEW = 'NEW',
-  OPEN_BOX = 'OPEN_BOX',
-  LIKE_NEW = 'LIKE_NEW',
-  FAIR = 'FAIR',
-  POOR = 'POOR',
-  FOR_PARTS = 'FOR_PARTS',
-  REFURBISHED = 'REFURBISHED',
-}
-
 export enum ProductSize {
   XS = 'XS',
   S = 'S',
@@ -61,30 +52,18 @@ export enum SortOrder {
   DESC = 'DESC',
 }
 
-export enum ProductSortField {
-  CREATED_AT = 'CREATED_AT',
-  PRICE = 'PRICE',
-  NAME = 'NAME',
-}
-
 export enum StoreProductSortField {
   CREATED_AT = 'CREATED_AT',
   PRICE = 'PRICE',
   NAME = 'NAME',
   RATING = 'RATING',
   STOCK = 'STOCK',
-  SUSTAINABILITY_SCORE = 'SUSTAINABILITY_SCORE',
 }
 
 // Register enums with GraphQL
 registerEnumType(Badge, {
   name: 'Badge',
   description: 'Product badge types',
-});
-
-registerEnumType(ProductCondition, {
-  name: 'ProductCondition',
-  description: 'Product condition types',
 });
 
 registerEnumType(ProductSize, {
@@ -102,12 +81,15 @@ registerEnumType(SortOrder, {
   description: 'Sort order direction',
 });
 
-registerEnumType(ProductSortField, {
-  name: 'ProductSortField',
-  description: 'Product sort field options',
-});
-
 registerEnumType(StoreProductSortField, {
   name: 'StoreProductSortField',
   description: 'Store product sort field options',
 });
+
+// Register Language enum from Prisma
+registerEnumType(Language, {
+  name: 'Language',
+  description: 'Supported languages for multi-language content',
+});
+
+export { Language };

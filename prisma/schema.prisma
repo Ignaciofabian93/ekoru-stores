@@ -415,34 +415,43 @@ model BusinessProfile {
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 model Department {
-  id                 Int                  @id @default(autoincrement())
-  departmentName     String
-  departmentImage    String?
-  href               String?
-  departmentCategory DepartmentCategory[]
+  id                    Int                     @id @default(autoincrement())
+  isActive              Boolean                 @default(true)
+  sortOrder             Int                     @default(0)
+  departmentCategory    DepartmentCategory[]
+  DepartmentTranslation DepartmentTranslation[]
+
+  @@index([id])
+  @@index([isActive, sortOrder])
 }
 
 model DepartmentCategory {
-  id                     Int               @id @default(autoincrement())
-  departmentId           Int
-  departmentCategoryName String
-  href                   String?
-  department             Department        @relation(fields: [departmentId], references: [id])
-  productCategory        ProductCategory[]
+  id                            Int                             @id @default(autoincrement())
+  departmentId                  Int
+  isActive                      Boolean                         @default(true)
+  sortOrder                     Int                             @default(0)
+  department                    Department                      @relation(fields: [departmentId], references: [id])
+  DepartmentCategoryTranslation DepartmentCategoryTranslation[]
+  productCategory               ProductCategory[]
+
+  @@index([departmentId])
+  @@index([isActive, sortOrder])
 }
 
 model ProductCategory {
-  id                   Int                       @id @default(autoincrement())
-  departmentCategoryId Int
-  averageWeight        Float?                    @default(0.0)
-  keywords             String[]
-  productCategoryName  String
-  size                 ProductSize?              @default(M)
-  weightUnit           WeightUnit?               @default(KG)
-  href                 String?
-  product              Product[]
-  departmentCategory   DepartmentCategory        @relation(fields: [departmentCategoryId], references: [id])
-  materials            ProductCategoryMaterial[]
+  id                         Int                          @id @default(autoincrement())
+  departmentCategoryId       Int
+  averageWeight              Float?                       @default(0.0)
+  size                       ProductSize?                 @default(M)
+  weightUnit                 WeightUnit?                  @default(KG)
+  isActive                   Boolean                      @default(true)
+  sortOrder                  Int                          @default(0)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @default(now())
+  product                    Product[]
+  departmentCategory         DepartmentCategory           @relation(fields: [departmentCategoryId], references: [id], onDelete: Cascade)
+  materials                  ProductCategoryMaterial[]
+  ProductCategoryTranslation ProductCategoryTranslation[]
 
   @@index([departmentCategoryId])
 }
@@ -466,47 +475,41 @@ model ProductCategoryMaterial {
 }
 
 model Product {
-  id                                            Int              @id @default(autoincrement())
-  name                                          String
-  description                                   String
-  price                                         Int
-  hasOffer                                      Boolean          @default(false)
-  offerPrice                                    Int?             @default(0)
-  sellerId                                      String
-  badges                                        Badge[]
-  brand                                         String
-  color                                         String?
-  createdAt                                     DateTime         @default(now())
-  images                                        String[]
-  interests                                     String[]
-  isActive                                      Boolean          @default(true)
-  isExchangeable                                Boolean          @default(false)
-  productCategoryId                             Int
-  updatedAt                                     DateTime
-  condition                                     ProductCondition @default(NEW)
-  conditionDescription                          String?
-  deletedAt                                     DateTime?
-  viewCount                                     Int              @default(0)
-  advertisement                                 Advertisement[]
-  chat                                          Chat[]
-  exchange_Exchange_offeredProductIdToProduct   Exchange[]       @relation("Exchange_offeredProductIdToProduct")
-  exchange_Exchange_requestedProductIdToProduct Exchange[]       @relation("Exchange_requestedProductIdToProduct")
-  orderItem                                     OrderItem[]
-  productCategory                               ProductCategory  @relation(fields: [productCategoryId], references: [id])
-  seller                                        Seller           @relation(fields: [sellerId], references: [id])
+  id                   Int              @id @default(autoincrement())
+  name                 String
+  description          String
+  color                String?
+  images               String[]
+  brand                String
+  price                Int
+  productCategoryId    Int
+  badges               Badge[]
+  interests            String[]
+  condition            ProductCondition @default(NEW)
+  conditionDescription String?
+  isActive             Boolean          @default(true)
+  isExchangeable       Boolean          @default(false)
+  sellerId             String
+  viewCount            Int              @default(0)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime
+  deletedAt            DateTime?
+  advertisement        Advertisement[]
+  chat                 Chat[]
+  exchangesOffered     Exchange[]       @relation("Exchange_offeredProductIdToProduct")
+  exchangesRequested   Exchange[]       @relation("Exchange_requestedProductIdToProduct")
+  orderItem            OrderItem[]
+  productCategory      ProductCategory  @relation(fields: [productCategoryId], references: [id])
+  seller               Seller           @relation(fields: [sellerId], references: [id])
 
-  @@index([createdAt])
-  @@index([isActive])
+  @@index([createdAt(sort: Desc)])
   @@index([price])
-  @@index([productCategoryId])
   @@index([sellerId])
   @@index([sellerId, isActive])
   @@index([isExchangeable, isActive])
-  @@index([productCategoryId, isActive])
-  @@index([createdAt(sort: Desc), isActive])
-  @@index([hasOffer, isActive])
   @@index([deletedAt])
-  @@index([viewCount])
+  @@index([viewCount(sort: Desc)])
+  @@index([productCategoryId, isActive, createdAt(sort: Desc)])
 }
 
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -514,108 +517,199 @@ model Product {
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 model StoreCategory {
-  id            Int                @id @default(autoincrement())
-  category      String
-  href          String?
-  subcategories StoreSubCategory[]
+  id        Int     @id @default(autoincrement())
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  storeSubCategory StoreSubCategory[]
+  translations     StoreCategoryTranslation[]
+
+  @@index([id])
+  @@index([isActive, sortOrder])
+}
+
+model StoreCategoryTranslation {
+  id              Int      @id @default(autoincrement())
+  storeCategoryId Int
+  language        Language
+  name            String
+  slug            String
+  href            String?
+
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  metaKeywords    String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeCategory StoreCategory @relation(fields: [storeCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([storeCategoryId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, storeCategoryId])
 }
 
 model StoreSubCategory {
-  id              Int                    @id @default(autoincrement())
-  subCategory     String
+  id              Int     @id @default(autoincrement())
   storeCategoryId Int
-  href            String?
-  storeProducts   StoreProduct[]
-  materials       StoreProductMaterial[]
-  storeCategory   StoreCategory          @relation(fields: [storeCategoryId], references: [id])
+  isActive        Boolean @default(true)
+  sortOrder       Int     @default(0)
+
+  averageWeight Float?       @default(0.0)
+  size          ProductSize? @default(M)
+  weightUnit    WeightUnit?  @default(KG)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeCategory StoreCategory                 @relation(fields: [storeCategoryId], references: [id])
+  storeProducts StoreProduct[]
+  materials     StoreProductMaterial[]
+  translations  StoreSubCategoryTranslation[]
+
+  @@index([storeCategoryId])
+}
+
+model StoreSubCategoryTranslation {
+  id                 Int      @id @default(autoincrement())
+  storeSubCategoryId Int
+  language           Language
+  name               String
+  slug               String
+  keywords           String[]
+  href               String?
+
+  metaTitle       String?
+  metaDescription String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  storeSubCategory StoreSubCategory @relation(fields: [storeSubCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([storeSubCategoryId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, storeSubCategoryId])
+  @@index([language])
 }
 
 model StoreProduct {
-  id                  Int                  @id @default(autoincrement())
-  name                String
-  description         String
-  stock               Int                  @default(0)
-  barcode             String?              @unique
-  sku                 String?
-  price               Int
-  hasOffer            Boolean              @default(false)
-  offerPrice          Int?
-  sellerId            String
-  createdAt           DateTime             @default(now())
-  images              String[]
-  isActive            Boolean              @default(true)
-  updatedAt           DateTime
-  badges              Badge[]
-  brand               String?
-  color               String?
-  ratingCount         Int                  @default(0)
-  ratings             Float                @default(0)
-  reviewsNumber       Int                  @default(0)
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  stock       Int      @default(0)
+  barcode     String?  @unique
+  sku         String?
+  price       Int
+  hasOffer    Boolean  @default(false)
+  offerPrice  Int?
+  sellerId    String
+  images      String[]
+  isActive    Boolean  @default(true)
+  badges      Badge[]
+  brand       String?
+  color       String?
+
+  // Metrics & Engagement
+  averageRating Float @default(0)
+  reviewsNumber Int   @default(0)
+  likesCount    Int   @default(0)
+  saleCount     Int   @default(0)
+  viewCount     Int   @default(0)
+
+  // Product Specifications
   materialComposition String?
   recycledContent     Float?
-  subcategoryId       Int
-  deletedAt           DateTime?
-  sustainabilityScore Int?
-  carbonFootprint     Float?
-  saleCount           Int                  @default(0)
-  viewCount           Int                  @default(0)
-  advertisement       Advertisement[]
-  productComment      ProductComment[]
-  productLike         ProductLike[]
-  productVariant      ProductVariant[]
-  seller              Seller               @relation(fields: [sellerId], references: [id])
-  storeSubCategory    StoreSubCategory     @relation(fields: [subcategoryId], references: [id])
-  StoreProductReview  StoreProductReview[]
+  weight              Float?
+  weightUnit          WeightUnit?    @default(KG)
+  length              Float?
+  width               Float?
+  height              Float?
+  dimensionUnit       DimensionUnit? @default(CM)
+
+  // Inventory Management
+  lowStockThreshold Int?    @default(5)
+  isLowStock        Boolean @default(false)
+
+  // SEO & Search
+  tags            String[]
+  metaTitle       String?
+  metaDescription String?
+
+  // Additional Info
+  warranty         String?
+  warrantyDuration Int?
+  features         String[]
+
+  subCategoryId Int
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+
+  advertisement      Advertisement[]
+  orderItem          OrderItem[]          @relation("StoreProductOrderItems")
+  productComment     ProductComment[]
+  productLike        ProductLike[]
+  productVariant     ProductVariant[]
+  seller             Seller               @relation(fields: [sellerId], references: [id])
+  storeSubCategory   StoreSubCategory     @relation(fields: [subCategoryId], references: [id])
+  StoreProductReview StoreProductReview[]
 
   @@index([sellerId])
-  @@index([subcategoryId])
+  @@index([subCategoryId])
   @@index([isActive])
   @@index([sellerId, isActive])
-  @@index([subcategoryId, isActive])
+  @@index([subCategoryId, isActive])
   @@index([stock])
+  @@index([isLowStock])
   @@index([hasOffer, isActive])
   @@index([createdAt(sort: Desc), isActive])
-  @@index([ratings(sort: Desc), isActive])
   @@index([deletedAt])
-  @@index([saleCount])
-  @@index([viewCount])
+  @@index([saleCount(sort: Desc)])
+  @@index([viewCount(sort: Desc)])
+  @@index([averageRating(sort: Desc)])
+  @@index([reviewsNumber(sort: Desc)])
+  @@index([likesCount(sort: Desc)])
+  @@index([tags])
 }
 
 model StoreProductMaterial {
-  id                 Int                    @id @default(autoincrement())
+  id                 Int     @id @default(autoincrement())
+  storeSubCategoryId Int
   materialTypeId     Int
   quantity           Float
-  unit               String                 @default("percentage")
-  isPrimary          Boolean                @default(false)
-  sourceMaterial     String?
-  isRecycled         Boolean                @default(true)
-  recycledPercentage Float?                 @default(100)
-  supplierVerified   Boolean                @default(false)
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
-  storeSubcategoryId Int
-  material           MaterialImpactEstimate @relation(fields: [materialTypeId], references: [id])
-  storeSubCategory   StoreSubCategory       @relation(fields: [storeSubcategoryId], references: [id], onDelete: Cascade)
+  unit               String  @default("percentage")
+  isPrimary          Boolean @default(false)
 
-  @@unique([storeSubcategoryId, materialTypeId])
-  @@index([storeSubcategoryId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  material         MaterialImpactEstimate @relation(fields: [materialTypeId], references: [id])
+  storeSubCategory StoreSubCategory       @relation(fields: [storeSubCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([storeSubCategoryId, materialTypeId])
+  @@index([storeSubCategoryId])
   @@index([materialTypeId])
   @@index([isPrimary])
-  @@index([isRecycled])
-  @@index([sourceMaterial])
 }
 
 model ProductVariant {
-  id             Int          @id @default(autoincrement())
+  id             Int         @id @default(autoincrement())
+  storeProductId Int
   name           String
   price          Int
   stock          Int
   color          String?
-  size           String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime
-  storeProductId Int
-  product        StoreProduct @relation(fields: [storeProductId], references: [id])
+  size           ProductSize
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  product StoreProduct @relation(fields: [storeProductId], references: [id])
 
   @@unique([storeProductId, color, size])
 }
@@ -1036,16 +1130,20 @@ model Order {
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
-  orderId   Int
-  productId Int
-  quantity  Int
-  createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+  id             Int           @id @default(autoincrement())
+  orderId        Int
+  productId      Int? // Marketplace product (used/exchangeable)
+  storeProductId Int? // Store product (new ecommerce)
+  quantity       Int
+  price          Int // Price at time of order
+  createdAt      DateTime      @default(now())
+  order          Order         @relation(fields: [orderId], references: [id])
+  product        Product?      @relation(fields: [productId], references: [id])
+  storeProduct   StoreProduct? @relation("StoreProductOrderItems", fields: [storeProductId], references: [id])
 
   @@index([orderId])
   @@index([productId])
+  @@index([storeProductId])
 }
 
 model Message {
@@ -1458,6 +1556,68 @@ model UserSearchHistory {
   @@index([userId, searchedAt(sort: Desc)])
 }
 
+model DepartmentCategoryTranslation {
+  id                   Int                @id @default(autoincrement())
+  departmentCategoryId Int
+  language             Language
+  name                 String
+  slug                 String
+  href                 String?
+  metaTitle            String?
+  metaDescription      String?
+  metaKeywords         String[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime
+  DepartmentCategory   DepartmentCategory @relation(fields: [departmentCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentCategoryId, language])
+  @@unique([slug, language])
+  @@index([language, departmentCategoryId])
+  @@index([slug, language])
+}
+
+model DepartmentTranslation {
+  id              Int        @id @default(autoincrement())
+  departmentId    Int
+  language        Language
+  name            String
+  slug            String
+  href            String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime
+  Department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, language])
+  @@unique([slug, language])
+  @@index([language, departmentId])
+  @@index([slug, language])
+}
+
+model ProductCategoryTranslation {
+  id                Int             @id @default(autoincrement())
+  productCategoryId Int
+  language          Language
+  name              String
+  slug              String
+  keywords          String[]
+  href              String?
+  metaTitle         String?
+  metaDescription   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime
+  metaKeywords      String[]
+  ProductCategory   ProductCategory @relation(fields: [productCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productCategoryId, language])
+  @@unique([slug, language])
+  @@index([language])
+  @@index([language, productCategoryId])
+  @@index([slug, language])
+}
+
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1738,4 +1898,20 @@ enum WeightUnit {
   LB
   OZ
   G
+}
+
+enum DimensionUnit {
+  CM
+  M
+  MM
+  INCH
+  FOOT
+}
+
+enum Language {
+  ES
+  EN
+  FR
+  PT
+  DE
 }

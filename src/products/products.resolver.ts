@@ -6,65 +6,59 @@ import {
   ID,
   Int,
   ResolveField,
+  ResolveReference,
   Parent,
 } from '@nestjs/graphql';
-import { ProductsService } from './products.service';
-import { ImpactService } from '../impact/impact.service';
 import { CurrentSeller } from '../common/decorators';
+import { StoreSubCategoryEntity } from '../catalog-v2/entities';
+import { ProductEntity, SellerEntity } from './entities/product.entity';
+import { ProductConnectionEntity } from './entities/product-connection.entity';
+import { EnvironmentalImpactEntity } from './entities/environmental-impact.entity';
+import { ProductsService } from './products.service';
+import { ImpactService } from '../services/impact.service';
 import {
-  StoreProduct,
-  StoreProductConnection,
-  StoreSubCategory,
-  ProductVariant,
-  EnvironmentalImpact,
-  Seller,
-} from '../catalog/entities';
-import {
-  AddProductInput,
-  UpdateProductInput,
-  ProductFilterInput,
-  ProductSortInput,
-} from './dto';
+  StoreProductFilterInput,
+  StoreProductSortInput,
+  AddStoreProductInput,
+  UpdateStoreProductInput,
+} from './dto/product.input';
 
-@Resolver(() => StoreProduct)
+@Resolver(() => ProductEntity)
 export class ProductsResolver {
   constructor(
     private readonly productsService: ProductsService,
     private readonly impactService: ImpactService,
   ) {}
 
-  @Query(() => StoreProduct, { nullable: true, name: 'getStoreProductById' })
+  @Query(() => ProductEntity, { nullable: true, name: 'getProductById' })
   async getProductById(@Args('id', { type: () => ID }) id: string) {
     return this.productsService.getProductById(Number(id));
   }
 
-  @Query(() => StoreProductConnection, {
-    nullable: true,
-    name: 'getStoreProducts',
-  })
+  @Query(() => ProductConnectionEntity, { nullable: true, name: 'getProducts' })
   async getProducts(
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
-    @Args('filter', { type: () => ProductFilterInput, nullable: true })
-    filter?: ProductFilterInput,
-    @Args('sort', { type: () => ProductSortInput, nullable: true })
-    sort?: ProductSortInput,
+    @Args('filter', { type: () => StoreProductFilterInput, nullable: true })
+    filter?: StoreProductFilterInput,
+    @Args('sort', { type: () => StoreProductSortInput, nullable: true })
+    sort?: StoreProductSortInput,
   ) {
     return this.productsService.getProducts(page, pageSize, filter, sort);
   }
 
-  @Query(() => StoreProductConnection, {
+  @Query(() => ProductConnectionEntity, {
     nullable: true,
-    name: 'getStoreProductsBySeller',
+    name: 'getProductsBySeller',
   })
   async getProductsBySeller(
     @Args('sellerId', { type: () => ID }) sellerId: string,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
-    @Args('filter', { type: () => ProductFilterInput, nullable: true })
-    filter?: ProductFilterInput,
-    @Args('sort', { type: () => ProductSortInput, nullable: true })
-    sort?: ProductSortInput,
+    @Args('filter', { type: () => StoreProductFilterInput, nullable: true })
+    filter?: StoreProductFilterInput,
+    @Args('sort', { type: () => StoreProductSortInput, nullable: true })
+    sort?: StoreProductSortInput,
   ) {
     return this.productsService.getProductsBySeller(
       sellerId,
@@ -75,21 +69,21 @@ export class ProductsResolver {
     );
   }
 
-  @Query(() => StoreProductConnection, {
+  @Query(() => ProductConnectionEntity, {
     nullable: true,
-    name: 'getProductsBySubcategory',
+    name: 'getProductsBySubCategory',
   })
-  async getProductsBySubcategory(
-    @Args('subcategoryId', { type: () => ID }) subcategoryId: string,
+  async getProductsBySubCategory(
+    @Args('subCategoryId', { type: () => ID }) subCategoryId: string,
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
-    @Args('filter', { type: () => ProductFilterInput, nullable: true })
-    filter?: ProductFilterInput,
-    @Args('sort', { type: () => ProductSortInput, nullable: true })
-    sort?: ProductSortInput,
+    @Args('filter', { type: () => StoreProductFilterInput, nullable: true })
+    filter?: StoreProductFilterInput,
+    @Args('sort', { type: () => StoreProductSortInput, nullable: true })
+    sort?: StoreProductSortInput,
   ) {
-    return this.productsService.getProductsBySubcategory(
-      Number(subcategoryId),
+    return this.productsService.getProductsBySubCategory(
+      Number(subCategoryId),
       page,
       pageSize,
       filter,
@@ -97,17 +91,45 @@ export class ProductsResolver {
     );
   }
 
-  @Query(() => StoreProductConnection, {
+  /**
+   * Get products by Store Category
+   * Returns all products from all subcategories under this store category
+   * Example: "Electronics" store category → phones, tablets, laptops, etc.
+   */
+  @Query(() => ProductConnectionEntity, {
+    nullable: true,
+    name: 'getProductsByStoreCategory',
+  })
+  async getProductsByStoreCategory(
+    @Args('categoryId', { type: () => ID })
+    categoryId: string,
+    @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
+    @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
+    @Args('filter', { type: () => StoreProductFilterInput, nullable: true })
+    filter?: StoreProductFilterInput,
+    @Args('sort', { type: () => StoreProductSortInput, nullable: true })
+    sort?: StoreProductSortInput,
+  ) {
+    return this.productsService.getProductsByStoreCategory(
+      Number(categoryId),
+      page,
+      pageSize,
+      filter,
+      sort,
+    );
+  }
+
+  @Query(() => ProductConnectionEntity, {
     nullable: true,
     name: 'getProductsOnOffer',
   })
   async getProductsOnOffer(
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
-    @Args('filter', { type: () => ProductFilterInput, nullable: true })
-    filter?: ProductFilterInput,
-    @Args('sort', { type: () => ProductSortInput, nullable: true })
-    sort?: ProductSortInput,
+    @Args('filter', { type: () => StoreProductFilterInput, nullable: true })
+    filter?: StoreProductFilterInput,
+    @Args('sort', { type: () => StoreProductSortInput, nullable: true })
+    sort?: StoreProductSortInput,
   ) {
     return this.productsService.getProductsOnOffer(
       page,
@@ -117,30 +139,33 @@ export class ProductsResolver {
     );
   }
 
-  @Mutation(() => StoreProduct, { nullable: true, name: 'addStoreProduct' })
+  @Mutation(() => ProductEntity, { nullable: true, name: 'addProduct' })
   async addProduct(
-    @Args('input') input: AddProductInput,
+    @Args('input') input: AddStoreProductInput,
     @CurrentSeller() sellerId?: string,
   ) {
     return this.productsService.addProduct(input, sellerId);
   }
 
-  @Mutation(() => StoreProduct, { nullable: true, name: 'updateStoreProduct' })
+  @Mutation(() => ProductEntity, { nullable: true, name: 'updateProduct' })
   async updateProduct(
-    @Args('input') input: UpdateProductInput,
+    @Args('input') input: UpdateStoreProductInput,
     @CurrentSeller() sellerId?: string,
   ) {
     return this.productsService.updateProduct(input, sellerId);
   }
 
-  @Mutation(() => StoreProduct, { nullable: true, name: 'deleteStoreProduct' })
-  async deleteProduct(@Args('id', { type: () => ID }) id: string) {
-    return this.productsService.deleteProduct(Number(id));
+  @Mutation(() => ProductEntity, { nullable: true, name: 'deleteProduct' })
+  async deleteProduct(
+    @Args('id', { type: () => ID }) id: string,
+    @CurrentSeller() sellerId?: string,
+  ) {
+    return this.productsService.deleteProduct(Number(id), sellerId);
   }
 
-  @Mutation(() => StoreProduct, {
+  @Mutation(() => ProductEntity, {
     nullable: true,
-    name: 'toggleStoreProductActive',
+    name: 'toggleProductActive',
   })
   async toggleProductActive(
     @Args('id', { type: () => ID }) id: string,
@@ -150,24 +175,16 @@ export class ProductsResolver {
   }
 
   // Field resolvers
-  @ResolveField(() => StoreSubCategory, { nullable: true })
-  storeSubCategory(@Parent() product: StoreProduct) {
+  @ResolveField(() => StoreSubCategoryEntity, { nullable: true })
+  storeSubCategory(@Parent() product: ProductEntity) {
     if (product.storeSubCategory) {
       return product.storeSubCategory;
     }
     return null;
   }
 
-  @ResolveField(() => [ProductVariant], { nullable: true })
-  productVariants(@Parent() product: StoreProduct) {
-    if (product.productVariants) {
-      return product.productVariants;
-    }
-    return [];
-  }
-
-  @ResolveField(() => Seller, { nullable: true })
-  seller(@Parent() product: StoreProduct) {
+  @ResolveField(() => SellerEntity, { nullable: true })
+  seller(@Parent() product: ProductEntity) {
     if (product.seller) {
       return product.seller;
     }
@@ -175,18 +192,35 @@ export class ProductsResolver {
     return { __typename: 'Seller', id: product.sellerId };
   }
 
-  @ResolveField(() => EnvironmentalImpact, { nullable: true })
-  async environmentalImpact(@Parent() product: StoreProduct) {
+  @ResolveField(() => EnvironmentalImpactEntity, { nullable: true })
+  async environmentalImpact(@Parent() product: ProductEntity) {
     try {
-      // Calculate impact based on subcategory materials
-      if (!product.subcategoryId) return null;
+      // For StoreProduct, we calculate impact based on the subcategory's materials
+      // We need to get the subCategoryId from the product
+      // If storeSubCategory is loaded, use its id, otherwise the product should have subCategoryId
+      const subCategoryId = product.storeSubCategory?.id;
 
-      return await this.impactService.calculateSubcategoryImpact(
-        product.subcategoryId,
-      );
+      if (!subCategoryId) {
+        return null;
+      }
+
+      return await this.impactService.calculateSubCategoryImpact(subCategoryId);
     } catch (error) {
       console.error('Error calculating environmental impact:', error);
       return null;
     }
+  }
+}
+
+/**
+ * Seller Reference Resolver for Apollo Federation
+ * This allows the gateway to resolve Seller entities from the users subgraph
+ */
+@Resolver(() => SellerEntity)
+export class SellerReferenceResolver {
+  @ResolveReference()
+  resolveReference(reference: { __typename: string; id: string }) {
+    // Return the reference as-is. The users subgraph will resolve the full entity
+    return reference;
   }
 }

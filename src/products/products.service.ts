@@ -1,54 +1,404 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import {
-  NotFoundError,
-  InternalServerError,
-  UnAuthorizedError,
-} from '../common/exceptions/graphql.exceptions';
-import {
-  calculatePrismaParams,
-  createPaginatedResponse,
-} from '../common/utils/pagination';
-import {
-  AddProductInput,
-  UpdateProductInput,
-  ProductFilterInput,
-  ProductSortInput,
-} from './dto';
+  StoreProductFilterInput,
+  StoreProductSortInput,
+  AddStoreProductInput,
+  UpdateStoreProductInput,
+} from './dto/product.input';
 
 @Injectable()
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
-  private readonly storeProductInclude = {
-    storeSubCategory: {
-      include: {
-        storeCategory: true,
-        materials: {
-          include: {
-            material: true,
-          },
-        },
-      },
-    },
-    productVariant: true,
-    seller: {
-      select: {
-        id: true,
-        email: true,
-        sellerType: true,
-        isActive: true,
-        isVerified: true,
-      },
-    },
-  };
-
   constructor(private readonly prisma: PrismaService) {}
 
-  private buildProductWhereClause(filter?: ProductFilterInput) {
-    const where: any = { deletedAt: null };
+  /**
+   * Get a single store product by ID
+   */
+  async getProductById(id: number) {
+    const product = await this.prisma.storeProduct.findUnique({
+      where: { id },
+      include: {
+        storeSubCategory: true,
+      },
+    });
 
-    if (!filter) return where;
+    if (!product) {
+      throw new NotFoundException(`Store product with ID ${id} not found`);
+    }
+
+    return product;
+  }
+
+  /**
+   * Get all store products with pagination and filters
+   */
+  async getProducts(
+    page: number,
+    pageSize: number,
+    filter?: StoreProductFilterInput,
+    sort?: StoreProductSortInput,
+  ) {
+    const skip = (page - 1) * pageSize;
+    const where = this.buildWhereClause(filter);
+    const orderBy = this.buildOrderBy(sort);
+
+    const [products, totalCount] = await Promise.all([
+      this.prisma.storeProduct.findMany({
+        where,
+        orderBy,
+        skip,
+        take: pageSize,
+        include: {
+          storeSubCategory: true,
+        },
+      }),
+      this.prisma.storeProduct.count({ where }),
+    ]);
+
+    return this.createPaginatedResponse(products, totalCount, page, pageSize);
+  }
+
+  /**
+   * Get store products by seller ID
+   */
+  async getProductsBySeller(
+    sellerId: string,
+    page: number,
+    pageSize: number,
+    filter?: StoreProductFilterInput,
+    sort?: StoreProductSortInput,
+  ) {
+    const skip = (page - 1) * pageSize;
+    const where = {
+      ...this.buildWhereClause(filter),
+      sellerId,
+    };
+    const orderBy = this.buildOrderBy(sort);
+
+    const [products, totalCount] = await Promise.all([
+      this.prisma.storeProduct.findMany({
+        where,
+        orderBy,
+        skip,
+        take: pageSize,
+        include: {
+          storeSubCategory: true,
+        },
+      }),
+      this.prisma.storeProduct.count({ where }),
+    ]);
+
+    return this.createPaginatedResponse(products, totalCount, page, pageSize);
+  }
+
+  /**
+   * Get store products by Store SubCategory ID
+   * Returns only products in this specific subcategory
+   */
+  async getProductsBySubCategory(
+    subCategoryId: number,
+    page: number,
+    pageSize: number,
+    filter?: StoreProductFilterInput,
+    sort?: StoreProductSortInput,
+  ) {
+    const skip = (page - 1) * pageSize;
+    const where = {
+      ...this.buildWhereClause(filter),
+      subCategoryId,
+    };
+    const orderBy = this.buildOrderBy(sort);
+
+    const [products, totalCount] = await Promise.all([
+      this.prisma.storeProduct.findMany({
+        where,
+        orderBy,
+        skip,
+        take: pageSize,
+        include: {
+          storeSubCategory: true,
+        },
+      }),
+      this.prisma.storeProduct.count({ where }),
+    ]);
+
+    return this.createPaginatedResponse(products, totalCount, page, pageSize);
+  }
+
+  /**
+   * Get store products by Store Category ID
+   * Returns all products from all subcategories under this category
+   */
+  async getProductsByStoreCategory(
+    categoryId: number,
+    page: number,
+    pageSize: number,
+    filter?: StoreProductFilterInput,
+    sort?: StoreProductSortInput,
+  ) {
+    // First, get all subcategory IDs under this store category
+    const subCategories = await this.prisma.storeSubCategory.findMany({
+      where: {
+        storeCategoryId: categoryId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const subCategoryIds = subCategories.map((sc) => sc.id);
+
+    if (subCategoryIds.length === 0) {
+      return this.createPaginatedResponse([], 0, page, pageSize);
+    }
+
+    const skip = (page - 1) * pageSize;
+    const where = {
+      ...this.buildWhereClause(filter),
+      subCategoryId: {
+        in: subCategoryIds,
+      },
+    };
+    const orderBy = this.buildOrderBy(sort);
+
+    const [products, totalCount] = await Promise.all([
+      this.prisma.storeProduct.findMany({
+        where,
+        orderBy,
+        skip,
+        take: pageSize,
+        include: {
+          storeSubCategory: true,
+        },
+      }),
+      this.prisma.storeProduct.count({ where }),
+    ]);
+
+    return this.createPaginatedResponse(products, totalCount, page, pageSize);
+  }
+
+  /**
+   * Get products on offer/sale
+   */
+  async getProductsOnOffer(
+    page: number,
+    pageSize: number,
+    filter?: StoreProductFilterInput,
+    sort?: StoreProductSortInput,
+  ) {
+    const skip = (page - 1) * pageSize;
+    const where = {
+      ...this.buildWhereClause(filter),
+      hasOffer: true,
+    };
+    const orderBy = this.buildOrderBy(sort);
+
+    const [products, totalCount] = await Promise.all([
+      this.prisma.storeProduct.findMany({
+        where,
+        orderBy,
+        skip,
+        take: pageSize,
+        include: {
+          storeSubCategory: true,
+        },
+      }),
+      this.prisma.storeProduct.count({ where }),
+    ]);
+
+    return this.createPaginatedResponse(products, totalCount, page, pageSize);
+  }
+
+  /**
+   * Add a new product
+   */
+  async addProduct(input: AddStoreProductInput, sellerId?: string) {
+    if (!sellerId) {
+      throw new NotFoundException('Seller authentication required');
+    }
+
+    const product = await this.prisma.storeProduct.create({
+      data: {
+        ...input,
+        sellerId,
+        updatedAt: new Date(),
+      },
+      include: {
+        storeSubCategory: true,
+      },
+    });
+
+    return product;
+  }
+
+  /**
+   * Update an existing product
+   */
+  async updateProduct(input: UpdateStoreProductInput, sellerId?: string) {
+    if (!sellerId) {
+      throw new NotFoundException('Seller authentication required');
+    }
+
+    const product = await this.prisma.storeProduct.findUnique({
+      where: { id: input.id },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${input.id} not found`);
+    }
+
+    if (product.sellerId !== sellerId) {
+      throw new NotFoundException(
+        'You do not have permission to update this product',
+      );
+    }
+
+    const { id, ...data } = input;
+    const updatedProduct = await this.prisma.storeProduct.update({
+      where: { id },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+      include: {
+        storeSubCategory: true,
+      },
+    });
+
+    return updatedProduct;
+  }
+
+  /**
+   * Delete a store product (soft delete)
+   */
+  async deleteProduct(id: number, sellerId?: string) {
+    if (!sellerId) {
+      throw new NotFoundException('Seller authentication required');
+    }
+
+    const product = await this.prisma.storeProduct.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Store product with ID ${id} not found`);
+    }
+
+    if (product.sellerId !== sellerId) {
+      throw new NotFoundException(
+        'You do not have permission to delete this product',
+      );
+    }
+
+    const deletedProduct = await this.prisma.storeProduct.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
+      },
+      include: {
+        storeSubCategory: true,
+      },
+    });
+
+    return deletedProduct;
+  }
+
+  /**
+   * Toggle store product active status
+   */
+  async toggleProductActive(id: number, sellerId?: string) {
+    if (!sellerId) {
+      throw new NotFoundException('Seller authentication required');
+    }
+
+    const product = await this.prisma.storeProduct.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Store product with ID ${id} not found`);
+    }
+
+    if (product.sellerId !== sellerId) {
+      throw new NotFoundException(
+        'You do not have permission to modify this product',
+      );
+    }
+
+    const updatedProduct = await this.prisma.storeProduct.update({
+      where: { id },
+      data: {
+        isActive: !product.isActive,
+        updatedAt: new Date(),
+      },
+      include: {
+        storeSubCategory: true,
+      },
+    });
+
+    return updatedProduct;
+  }
+
+  /**
+   * Build Prisma orderBy clause from sort input
+   */
+  private buildOrderBy(
+    sort?: StoreProductSortInput,
+  ): Prisma.StoreProductOrderByWithRelationInput {
+    if (!sort || !sort.field) {
+      return { createdAt: 'desc' };
+    }
+
+    const field = sort.field.toLowerCase();
+    const order = sort.order?.toLowerCase() || 'desc';
+
+    return { [field]: order } as Prisma.StoreProductOrderByWithRelationInput;
+  }
+
+  /**
+   * Create paginated response
+   */
+  private createPaginatedResponse<T>(
+    items: T[],
+    totalCount: number,
+    page: number,
+    pageSize: number,
+  ) {
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    return {
+      edges: items,
+      pageInfo: {
+        currentPage: page,
+        totalPages,
+        totalCount,
+        hasNextPage,
+        hasPreviousPage,
+      },
+    };
+  }
+  /**
+   * Build Prisma where clause from filter input
+   */
+  private buildWhereClause(filter?: StoreProductFilterInput) {
+    if (!filter) {
+      return {
+        isActive: true,
+        deletedAt: null,
+      };
+    }
+
+    const where: any = {
+      isActive: true,
+      deletedAt: null,
+    };
 
     if (filter.name) {
       where.name = {
@@ -57,21 +407,12 @@ export class ProductsService {
       };
     }
 
-    if (filter.minPrice !== undefined || filter.maxPrice !== undefined) {
-      where.price = {};
-      if (filter.minPrice !== undefined) where.price.gte = filter.minPrice;
-      if (filter.maxPrice !== undefined) where.price.lte = filter.maxPrice;
+    if (filter.minPrice !== undefined) {
+      where.price = { ...where.price, gte: filter.minPrice };
     }
 
-    if (filter.isActive !== undefined) where.isActive = filter.isActive;
-
-    if (filter.sellerId) where.sellerId = filter.sellerId;
-    if (filter.subcategoryId) where.subcategoryId = filter.subcategoryId;
-
-    if (filter.storeCategoryId) {
-      where.storeSubCategory = {
-        storeCategoryId: filter.storeCategoryId,
-      };
+    if (filter.maxPrice !== undefined) {
+      where.price = { ...where.price, lte: filter.maxPrice };
     }
 
     if (filter.brand) {
@@ -80,6 +421,7 @@ export class ProductsService {
         mode: 'insensitive',
       };
     }
+
     if (filter.color) {
       where.color = {
         contains: filter.color,
@@ -93,335 +435,30 @@ export class ProductsService {
       };
     }
 
-    if (filter.hasOffer !== undefined) where.hasOffer = filter.hasOffer;
+    if (filter.hasOffer !== undefined) {
+      where.hasOffer = filter.hasOffer;
+    }
 
-    if (filter.minStock !== undefined) {
-      where.stock = { gte: filter.minStock };
+    if (filter.isLowStock !== undefined) {
+      where.isLowStock = filter.isLowStock;
+    }
+
+    if (filter.subCategoryId !== undefined) {
+      where.subCategoryId = filter.subCategoryId;
+    }
+
+    if (filter.tags && filter.tags.length > 0) {
+      where.tags = {
+        hasSome: filter.tags,
+      };
     }
 
     if (filter.minRating !== undefined) {
-      where.ratings = { gte: filter.minRating };
-    }
-
-    if (filter.minRecycledContent !== undefined) {
-      where.recycledContent = { gte: filter.minRecycledContent };
-    }
-
-    if (filter.minSustainabilityScore !== undefined) {
-      where.sustainabilityScore = { gte: filter.minSustainabilityScore };
+      where.averageRating = {
+        gte: filter.minRating,
+      };
     }
 
     return where;
-  }
-
-  private buildProductOrderByClause(sort?: ProductSortInput): any {
-    if (!sort || !sort.field) return { createdAt: 'desc' };
-
-    const fieldMap: Record<string, string> = {
-      CREATED_AT: 'createdAt',
-      PRICE: 'price',
-      NAME: 'name',
-      RATING: 'ratings',
-      STOCK: 'stock',
-    };
-
-    const field = fieldMap[sort.field] || 'createdAt';
-    const order = sort.order?.toString() === 'ASC' ? 'asc' : 'desc';
-
-    return { [field]: order };
-  }
-
-  async getProducts(
-    page: number = 1,
-    pageSize: number = 20,
-    filter?: ProductFilterInput,
-    sort?: ProductSortInput,
-  ) {
-    try {
-      const { skip, take } = calculatePrismaParams(page, pageSize);
-      const where = this.buildProductWhereClause(filter);
-      const orderBy = this.buildProductOrderByClause(sort);
-
-      const totalCount = await this.prisma.storeProduct.count({ where });
-
-      const products = await this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take,
-        include: this.storeProductInclude,
-      });
-
-      return createPaginatedResponse(products, page, pageSize, totalCount);
-    } catch (error) {
-      this.logger.error('[getProducts] Error:', error);
-      throw new InternalServerError('Error al obtener los productos');
-    }
-  }
-
-  async getProductById(id: number) {
-    try {
-      const product = await this.prisma.storeProduct.findUnique({
-        where: { id: Number(id) },
-        include: this.storeProductInclude,
-      });
-
-      if (!product) {
-        throw new NotFoundError('Producto no encontrado');
-      }
-
-      return product;
-    } catch (error) {
-      this.logger.error('Error al obtener el producto:', error);
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
-      throw new InternalServerError('Error al obtener el producto');
-    }
-  }
-
-  async getProductsBySeller(
-    sellerId: string,
-    page: number = 1,
-    pageSize: number = 20,
-    filter?: ProductFilterInput,
-    sort?: ProductSortInput,
-  ) {
-    try {
-      const { skip, take } = calculatePrismaParams(page, pageSize);
-      const where = this.buildProductWhereClause(filter);
-      const orderBy = this.buildProductOrderByClause(sort);
-
-      where.sellerId = sellerId;
-
-      const totalCount = await this.prisma.storeProduct.count({ where });
-
-      const products = await this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take,
-        include: this.storeProductInclude,
-      });
-
-      return createPaginatedResponse(products, page, pageSize, totalCount);
-    } catch (error) {
-      this.logger.error(
-        'Error al obtener los productos del propietario:',
-        error,
-      );
-      throw new InternalServerError(
-        'Error al obtener los productos del propietario',
-      );
-    }
-  }
-
-  async getProductsBySubcategory(
-    subcategoryId: number,
-    page: number = 1,
-    pageSize: number = 20,
-    filter?: ProductFilterInput,
-    sort?: ProductSortInput,
-  ) {
-    try {
-      const { skip, take } = calculatePrismaParams(page, pageSize);
-      const where = this.buildProductWhereClause(filter);
-      const orderBy = this.buildProductOrderByClause(sort);
-
-      where.subcategoryId = subcategoryId;
-
-      const totalCount = await this.prisma.storeProduct.count({ where });
-
-      const products = await this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take,
-        include: this.storeProductInclude,
-      });
-
-      return createPaginatedResponse(products, page, pageSize, totalCount);
-    } catch (error) {
-      this.logger.error(
-        'Error al obtener los productos por subcategoría:',
-        error,
-      );
-      throw new InternalServerError(
-        'Error al obtener los productos por subcategoría',
-      );
-    }
-  }
-
-  async getProductsOnOffer(
-    page: number = 1,
-    pageSize: number = 20,
-    filter?: ProductFilterInput,
-    sort?: ProductSortInput,
-  ) {
-    try {
-      const { skip, take } = calculatePrismaParams(page, pageSize);
-      const where = this.buildProductWhereClause(filter);
-      const orderBy = this.buildProductOrderByClause(sort);
-
-      where.hasOffer = true;
-      where.isActive = true;
-
-      const totalCount = await this.prisma.storeProduct.count({ where });
-
-      const products = await this.prisma.storeProduct.findMany({
-        where,
-        skip,
-        take,
-        orderBy,
-        include: this.storeProductInclude,
-      });
-
-      return createPaginatedResponse(products, page, pageSize, totalCount);
-    } catch (error) {
-      this.logger.error('Error al obtener los productos en oferta:', error);
-      throw new InternalServerError('Error al obtener los productos en oferta');
-    }
-  }
-
-  async addProduct(input: AddProductInput, sellerId?: string) {
-    try {
-      if (!sellerId) {
-        throw new UnAuthorizedError('No autorizado');
-      }
-
-      const { subcategoryId } = input;
-      const parsedSubcategoryId = Number(subcategoryId);
-
-      const product = await this.prisma.storeProduct.create({
-        data: {
-          ...input,
-          subcategoryId: parsedSubcategoryId,
-          sellerId,
-          updatedAt: new Date(),
-        },
-        include: this.storeProductInclude,
-      });
-
-      if (!product) {
-        throw new InternalServerError('Error al crear el producto');
-      }
-
-      return product;
-    } catch (error) {
-      this.logger.error('Error al crear el producto:', error);
-      if (error instanceof UnAuthorizedError) {
-        throw error;
-      }
-      throw new InternalServerError('Error al crear el producto');
-    }
-  }
-
-  async updateProduct(input: UpdateProductInput, sellerId?: string) {
-    try {
-      if (!sellerId) {
-        throw new UnAuthorizedError('No autorizado');
-      }
-
-      const { id, ...data } = input;
-      const parsedId = Number(id);
-
-      const existingProduct = await this.prisma.storeProduct.findUnique({
-        where: { id: parsedId },
-        select: { sellerId: true },
-      });
-
-      if (!existingProduct) {
-        throw new NotFoundError('Producto no encontrado');
-      }
-
-      if (existingProduct.sellerId !== sellerId) {
-        throw new UnAuthorizedError(
-          'No tienes permiso para editar este producto',
-        );
-      }
-
-      const product = await this.prisma.storeProduct.update({
-        where: { id: parsedId },
-        data: {
-          ...data,
-          updatedAt: new Date(),
-        },
-        include: this.storeProductInclude,
-      });
-
-      return product;
-    } catch (error) {
-      this.logger.error('Error al actualizar el producto:', error);
-      if (
-        error instanceof UnAuthorizedError ||
-        error instanceof NotFoundError
-      ) {
-        throw error;
-      }
-      throw new InternalServerError('Error al actualizar el producto');
-    }
-  }
-
-  async deleteProduct(id: number) {
-    try {
-      const product = await this.prisma.storeProduct.update({
-        where: { id: Number(id) },
-        data: {
-          deletedAt: new Date(),
-        },
-      });
-
-      if (!product) {
-        throw new InternalServerError('Error al eliminar el producto');
-      }
-
-      return product;
-    } catch (error) {
-      this.logger.error('Error al eliminar el producto:', error);
-      throw new InternalServerError('Error al eliminar el producto');
-    }
-  }
-
-  async toggleProductActive(id: number, sellerId?: string) {
-    try {
-      if (!sellerId) {
-        throw new UnAuthorizedError('No autorizado');
-      }
-
-      const existingProduct = await this.prisma.storeProduct.findUnique({
-        where: { id: Number(id) },
-        select: { sellerId: true, isActive: true },
-      });
-
-      if (!existingProduct) {
-        throw new NotFoundError('Producto no encontrado');
-      }
-
-      if (existingProduct.sellerId !== sellerId) {
-        throw new UnAuthorizedError(
-          'No tienes permiso para modificar este producto',
-        );
-      }
-
-      const product = await this.prisma.storeProduct.update({
-        where: { id: Number(id) },
-        data: {
-          isActive: !existingProduct.isActive,
-          updatedAt: new Date(),
-        },
-        include: this.storeProductInclude,
-      });
-
-      return product;
-    } catch (error) {
-      this.logger.error('Error al cambiar estado del producto:', error);
-      if (
-        error instanceof UnAuthorizedError ||
-        error instanceof NotFoundError
-      ) {
-        throw error;
-      }
-      throw new InternalServerError('Error al cambiar estado del producto');
-    }
   }
 }

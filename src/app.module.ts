@@ -5,15 +5,14 @@ import {
   ApolloFederationDriver,
   ApolloFederationDriverConfig,
 } from '@nestjs/apollo';
-import { Request, Response } from 'express';
+import { ModuleRef } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
-import { StoreCatalogModule } from './catalog/catalog.module';
-import { ProductsModule } from './products/products.module';
-import { StoreModule } from './store/store.module';
-import { ImpactModule } from './impact/impact.module';
 import { JSONScalar } from './graphql/scalars';
 import { HealthController } from './health/health.controller';
 import configuration from './config/configuration';
+import { CatalogV2Module } from './catalog-v2/catalog-v2.module';
+import { createContextFactory } from './graphql/context';
+import { ProductsModule } from './products/products.module';
 
 // Import to register enums
 import './graphql/enums';
@@ -27,35 +26,33 @@ import './graphql/enums';
     }),
 
     // GraphQL Federation
-    GraphQLModule.forRoot<ApolloFederationDriverConfig>({
+    GraphQLModule.forRootAsync<ApolloFederationDriverConfig>({
       driver: ApolloFederationDriver,
-      autoSchemaFile: {
-        federation: 2,
-      },
-      sortSchema: true,
-      playground: process.env.NODE_ENV !== 'production',
-      context: ({ req, res }: { req: Request; res: Response }) => ({
-        req,
-        res,
-        sellerId: req.headers['x-seller-id'] as string | undefined,
-        token: req.headers.authorization?.replace('Bearer ', ''),
+      useFactory: (moduleRef: ModuleRef) => ({
+        autoSchemaFile: {
+          federation: 2,
+        },
+        sortSchema: true,
+        playground: process.env.NODE_ENV !== 'production',
+        context: createContextFactory(moduleRef),
+        formatError: (error) => {
+          if (process.env.NODE_ENV !== 'production') {
+            delete error.extensions?.exception;
+          }
+          return error;
+        },
       }),
-      formatError: (error) => {
-        if (process.env.NODE_ENV === 'production') {
-          delete error.extensions?.exception;
-        }
-        return error;
-      },
+      inject: [ModuleRef],
     }),
 
     // Database
     PrismaModule,
 
-    // Feature modules
-    StoreCatalogModule,
-    StoreModule,
+    // DataLoader-based catalog with multi-language support
+    CatalogV2Module,
+
+    // Products Module
     ProductsModule,
-    ImpactModule,
   ],
   providers: [JSONScalar],
   controllers: [HealthController],
