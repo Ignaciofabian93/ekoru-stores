@@ -1244,10 +1244,27 @@ model MaterialImpactEstimate {
   materialType             String                    @unique
   estimatedCo2SavingsKG    Float
   estimatedWaterSavingsLT  Float
+
   productCategoryMaterials ProductCategoryMaterial[]
   storeProductMaterials    StoreProductMaterial[]
+  translations              MaterialImpactEstimateTranslation[]
 
   @@index([materialType])
+}
+
+model MaterialImpactEstimateTranslation {
+  id                           Int                       @id @default(autoincrement())
+  materialImpactEstimateId     Int
+  language                     Language
+  materialTypeTranslation      String
+
+  createdAt                    DateTime                  @default(now())
+  updatedAt                    DateTime                  @updatedAt
+  
+  materialImpactEstimate       MaterialImpactEstimate    @relation(fields: [materialImpactEstimateId], references: [id], onDelete: Cascade)
+
+  @@unique([materialImpactEstimateId, language])
+  @@index([language])
 }
 
 model ProductComment {

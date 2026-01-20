@@ -1,4 +1,4 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
+import { ObjectType, Field, Int, Directive } from '@nestjs/graphql';
 
 /**
  * GraphQL PageInfo Entity
@@ -6,6 +6,7 @@ import { ObjectType, Field, Int } from '@nestjs/graphql';
  * Contains pagination metadata for connection-based pagination.
  */
 @ObjectType('PageInfo')
+@Directive('@shareable')
 export class PageInfoEntity {
   @Field(() => Int, { description: 'Current page number' })
   currentPage: number;

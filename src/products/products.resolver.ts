@@ -30,12 +30,15 @@ export class ProductsResolver {
     private readonly impactService: ImpactService,
   ) {}
 
-  @Query(() => ProductEntity, { nullable: true, name: 'getProductById' })
+  @Query(() => ProductEntity, { nullable: true, name: 'getStoreProductById' })
   async getProductById(@Args('id', { type: () => ID }) id: string) {
     return this.productsService.getProductById(Number(id));
   }
 
-  @Query(() => ProductConnectionEntity, { nullable: true, name: 'getProducts' })
+  @Query(() => ProductConnectionEntity, {
+    nullable: true,
+    name: 'getStoreProducts',
+  })
   async getProducts(
     @Args('page', { type: () => Int, defaultValue: 1 }) page: number,
     @Args('pageSize', { type: () => Int, defaultValue: 10 }) pageSize: number,
@@ -49,7 +52,7 @@ export class ProductsResolver {
 
   @Query(() => ProductConnectionEntity, {
     nullable: true,
-    name: 'getProductsBySeller',
+    name: 'getStoreProductsBySeller',
   })
   async getProductsBySeller(
     @Args('sellerId', { type: () => ID }) sellerId: string,
@@ -71,7 +74,7 @@ export class ProductsResolver {
 
   @Query(() => ProductConnectionEntity, {
     nullable: true,
-    name: 'getProductsBySubCategory',
+    name: 'getStoreProductsBySubCategory',
   })
   async getProductsBySubCategory(
     @Args('subCategoryId', { type: () => ID }) subCategoryId: string,
@@ -139,7 +142,7 @@ export class ProductsResolver {
     );
   }
 
-  @Mutation(() => ProductEntity, { nullable: true, name: 'addProduct' })
+  @Mutation(() => ProductEntity, { nullable: true, name: 'addStoreProduct' })
   async addProduct(
     @Args('input') input: AddStoreProductInput,
     @CurrentSeller() sellerId?: string,
@@ -147,7 +150,7 @@ export class ProductsResolver {
     return this.productsService.addProduct(input, sellerId);
   }
 
-  @Mutation(() => ProductEntity, { nullable: true, name: 'updateProduct' })
+  @Mutation(() => ProductEntity, { nullable: true, name: 'updateStoreProduct' })
   async updateProduct(
     @Args('input') input: UpdateStoreProductInput,
     @CurrentSeller() sellerId?: string,
@@ -155,7 +158,7 @@ export class ProductsResolver {
     return this.productsService.updateProduct(input, sellerId);
   }
 
-  @Mutation(() => ProductEntity, { nullable: true, name: 'deleteProduct' })
+  @Mutation(() => ProductEntity, { nullable: true, name: 'deleteStoreProduct' })
   async deleteProduct(
     @Args('id', { type: () => ID }) id: string,
     @CurrentSeller() sellerId?: string,
@@ -165,7 +168,7 @@ export class ProductsResolver {
 
   @Mutation(() => ProductEntity, {
     nullable: true,
-    name: 'toggleProductActive',
+    name: 'toggleStoreProductActive',
   })
   async toggleProductActive(
     @Args('id', { type: () => ID }) id: string,

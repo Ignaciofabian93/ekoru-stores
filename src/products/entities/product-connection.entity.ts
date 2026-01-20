@@ -3,15 +3,15 @@ import { ProductEntity } from './product.entity';
 import { PageInfoEntity } from './page-info.entity';
 
 /**
- * GraphQL Product Connection Entity
+ * GraphQL StoreProduct Connection Entity
  *
- * Represents a paginated list of products following the connection pattern.
- * Used for all queries that return multiple products with pagination.
+ * Represents a paginated list of store products following the connection pattern.
+ * Used for all queries that return multiple store products with pagination.
  */
-@ObjectType('ProductConnection')
+@ObjectType('StoreProductConnection')
 export class ProductConnectionEntity {
   @Field(() => [ProductEntity], {
-    description: 'List of products',
+    description: 'List of store products',
     nullable: true,
   })
   nodes: ProductEntity[];
