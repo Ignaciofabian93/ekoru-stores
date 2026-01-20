@@ -7,148 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-model SellerLabel {
-  id                   Int                   @id @default(autoincrement())
-  labelName            String                @unique
-  transactionKind      TransactionKind
-  transactionsRequired Int
-  description          String?
-  badgeIcon            String?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  achievedBy           SellerAchievedLabel[]
+// ======================================================================================
+// GEOGRAPHY & LOCATION
+// ======================================================================================
 
-  @@index([transactionKind])
-  @@index([transactionsRequired])
-}
-
-model SellerAchievedLabel {
-  id           Int         @id @default(autoincrement())
-  sellerId     String
-  labelId      Int
-  achievedAt   DateTime    @default(now())
-  currentCount Int?
-  label        SellerLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
-  seller       Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-
-  @@unique([sellerId, labelId])
-  @@index([sellerId])
-  @@index([labelId])
-  @@index([achievedAt])
-}
-
-model PointsByTransactionKind {
-  id              Int             @id @default(autoincrement())
-  transactionKind TransactionKind @unique
-  pointsAwarded   Int
-  description     String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-
-  @@index([transactionKind])
-}
-
-model SellerLevel {
-  id        Int      @id @default(autoincrement())
-  levelName String   @unique
-  minPoints Int      @unique
-  maxPoints Int?
-  benefits  Json?
-  badgeIcon String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  sellers   Seller[]
-
-  @@index([minPoints])
-}
-
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-model PersonMembership {
-  id             Int                    @id @default(autoincrement())
-  membershipType PersonSubscriptionPlan @default(FREEMIUM)
-  price          Int
-  description    String[]
-  durationMonths Int
-  startDate      DateTime               @default(now())
-  endDate        DateTime?
-  isActive       Boolean                @default(true)
-  autoRenew      Boolean                @default(false)
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-  personProfiles PersonProfile[]
-
-  @@index([membershipType])
-  @@index([isActive])
-}
-
-model BusinessMembership {
-  id               Int                      @id @default(autoincrement())
-  membershipType   BusinessSubscriptionPlan @default(FREEMIUM)
-  price            Int
-  description      String[]
-  durationMonths   Int
-  startDate        DateTime                 @default(now())
-  endDate          DateTime?
-  isActive         Boolean                  @default(true)
-  autoRenew        Boolean                  @default(false)
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  businessProfiles BusinessProfile[]
-
-  @@index([membershipType])
-  @@index([isActive])
-}
-
-model TransactionFee {
-  id            Int           @id @default(autoincrement())
-  sellerTypeFee SellerType
-  feePercentage Float         @default(0.0)
-  description   String
-  transactions  Transaction[]
-
-  @@index([sellerTypeFee])
-  @@index([feePercentage])
-}
-
-model Advertisement {
-  id             Int               @id @default(autoincrement())
-  adType         AdvertisementType
-  price          Int
-  content        String
-  startDate      DateTime
-  endDate        DateTime
-  isActive       Boolean           @default(true)
-  sellerId       String
-  productId      Int?
-  storeProductId Int?
-  serviceId      Int?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  product        Product?          @relation(fields: [productId], references: [id])
-  seller         Seller            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  service        Service?          @relation(fields: [serviceId], references: [id])
-  storeProduct   StoreProduct?     @relation(fields: [storeProductId], references: [id])
-
-  @@index([sellerId])
-  @@index([adType])
-  @@index([isActive])
-  @@index([startDate, endDate])
-  @@index([productId])
-  @@index([storeProductId])
-  @@index([serviceId])
-}
-
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 model Country {
   id            Int            @id @default(autoincrement())
   country       String
@@ -208,10 +70,10 @@ model County {
   seller Seller[]
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ======================================================================================
+// ADMIN & PLATFORM MANAGEMENT
+// ======================================================================================
+
 model Admin {
   id               String             @id @default(uuid())
   email            String             @unique
@@ -271,10 +133,120 @@ model AdminActivityLog {
   @@index([action, createdAt(sort: Desc)])
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ======================================================================================
+// SELLER MANAGEMENT & GAMIFICATION
+// ======================================================================================
+
+model SellerLabel {
+  id                   Int                   @id @default(autoincrement())
+  labelName            String                @unique
+  transactionKind      TransactionKind
+  transactionsRequired Int
+  description          String?
+  badgeIcon            String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  achievedBy           SellerAchievedLabel[]
+
+  @@index([transactionKind])
+  @@index([transactionsRequired])
+}
+
+model SellerAchievedLabel {
+  id           Int         @id @default(autoincrement())
+  sellerId     String
+  labelId      Int
+  achievedAt   DateTime    @default(now())
+  currentCount Int?
+  label        SellerLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  seller       Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@unique([sellerId, labelId])
+  @@index([sellerId])
+  @@index([labelId])
+  @@index([achievedAt])
+}
+
+model PointsByTransactionKind {
+  id              Int             @id @default(autoincrement())
+  transactionKind TransactionKind @unique
+  pointsAwarded   Int
+  description     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([transactionKind])
+}
+
+model SellerLevel {
+  id        Int      @id @default(autoincrement())
+  levelName String   @unique
+  minPoints Int      @unique
+  maxPoints Int?
+  benefits  Json?
+  badgeIcon String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sellers   Seller[]
+
+  @@index([minPoints])
+}
+
+model TransactionFee {
+  id            Int           @id @default(autoincrement())
+  sellerTypeFee SellerType
+  feePercentage Float         @default(0.0)
+  description   String
+  transactions  Transaction[]
+
+  @@index([sellerTypeFee])
+  @@index([feePercentage])
+}
+
+// ======================================================================================
+// MEMBERSHIPS & SUBSCRIPTIONS
+// ======================================================================================
+
+model PersonMembership {
+  id             Int                    @id @default(autoincrement())
+  membershipType PersonSubscriptionPlan @default(FREEMIUM)
+  price          Int
+  description    String[]
+  durationMonths Int
+  startDate      DateTime               @default(now())
+  endDate        DateTime?
+  isActive       Boolean                @default(true)
+  autoRenew      Boolean                @default(false)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  personProfiles PersonProfile[]
+
+  @@index([membershipType])
+  @@index([isActive])
+}
+
+model BusinessMembership {
+  id               Int                      @id @default(autoincrement())
+  membershipType   BusinessSubscriptionPlan @default(FREEMIUM)
+  price            Int
+  description      String[]
+  durationMonths   Int
+  startDate        DateTime                 @default(now())
+  endDate          DateTime?
+  isActive         Boolean                  @default(true)
+  autoRenew        Boolean                  @default(false)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  businessProfiles BusinessProfile[]
+
+  @@index([membershipType])
+  @@index([isActive])
+}
+
+// ======================================================================================
+// SELLERS & PROFILES
+// ======================================================================================
+
 model Seller {
   id                                               String                      @id @default(uuid())
   email                                            String                      @unique
@@ -410,10 +382,10 @@ model BusinessProfile {
   @@index([sellerId])
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ======================================================================================
+// MARKETPLACE PRODUCTS (Used/Exchangeable)
+// ======================================================================================
+
 model Department {
   id                    Int                     @id @default(autoincrement())
   isActive              Boolean                 @default(true)
@@ -454,6 +426,68 @@ model ProductCategory {
   ProductCategoryTranslation ProductCategoryTranslation[]
 
   @@index([departmentCategoryId])
+}
+
+model DepartmentCategoryTranslation {
+  id                   Int                @id @default(autoincrement())
+  departmentCategoryId Int
+  language             Language
+  name                 String
+  slug                 String
+  href                 String?
+  metaTitle            String?
+  metaDescription      String?
+  metaKeywords         String[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime
+  DepartmentCategory   DepartmentCategory @relation(fields: [departmentCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentCategoryId, language])
+  @@unique([slug, language])
+  @@index([language, departmentCategoryId])
+  @@index([slug, language])
+}
+
+model DepartmentTranslation {
+  id              Int        @id @default(autoincrement())
+  departmentId    Int
+  language        Language
+  name            String
+  slug            String
+  href            String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime
+  Department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, language])
+  @@unique([slug, language])
+  @@index([language, departmentId])
+  @@index([slug, language])
+}
+
+model ProductCategoryTranslation {
+  id                Int             @id @default(autoincrement())
+  productCategoryId Int
+  language          Language
+  name              String
+  slug              String
+  keywords          String[]
+  href              String?
+  metaTitle         String?
+  metaDescription   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime
+  metaKeywords      String[]
+  ProductCategory   ProductCategory @relation(fields: [productCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([productCategoryId, language])
+  @@unique([slug, language])
+  @@index([language])
+  @@index([language, productCategoryId])
+  @@index([slug, language])
 }
 
 model ProductCategoryMaterial {
@@ -512,10 +546,10 @@ model Product {
   @@index([productCategoryId, isActive, createdAt(sort: Desc)])
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ======================================================================================
+// STORE PRODUCTS (New Ecommerce)
+// ======================================================================================
+
 model StoreCategory {
   id        Int     @id @default(autoincrement())
   isActive  Boolean @default(true)
@@ -714,25 +748,74 @@ model ProductVariant {
   @@unique([storeProductId, color, size])
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ======================================================================================
+// SERVICES
+// ======================================================================================
+
 model ServiceCategory {
-  id            Int                  @id @default(autoincrement())
-  category      String               @unique
-  href          String?
+  id            Int                         @id @default(autoincrement())
+  isActive      Boolean                     @default(true)
+  sortOrder     Int                         @default(0)
   subcategories ServiceSubCategory[]
+  translations  ServiceCategoryTranslation[]
+
+  @@index([isActive, sortOrder])
+}
+
+model ServiceCategoryTranslation {
+  id                Int             @id @default(autoincrement())
+  serviceCategoryId Int
+  language          Language
+  category          String
+  slug              String
+  href              String?
+  metaTitle         String?
+  metaDescription   String?
+  metaKeywords      String[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  serviceCategory   ServiceCategory @relation(fields: [serviceCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceCategoryId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, serviceCategoryId])
 }
 
 model ServiceSubCategory {
-  id                Int             @id @default(autoincrement())
-  subCategory       String
+  id                Int                            @id @default(autoincrement())
   serviceCategoryId Int
-  href              String?
+  isActive          Boolean                        @default(true)
+  sortOrder         Int                            @default(0)
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @updatedAt
   services          Service[]
   ServiceFAQ        ServiceFAQ[]
-  serviceCategory   ServiceCategory @relation(fields: [serviceCategoryId], references: [id])
+  serviceCategory   ServiceCategory                @relation(fields: [serviceCategoryId], references: [id])
+  translations      ServiceSubCategoryTranslation[]
+
+  @@index([serviceCategoryId])
+  @@index([isActive, sortOrder])
+}
+
+model ServiceSubCategoryTranslation {
+  id                   Int                  @id @default(autoincrement())
+  serviceSubCategoryId Int
+  language             Language
+  subCategory          String
+  slug                 String
+  href                 String?
+  metaTitle            String?
+  metaDescription      String?
+  metaKeywords         String[]
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  serviceSubCategory   ServiceSubCategory   @relation(fields: [serviceSubCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceSubCategoryId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, serviceSubCategoryId])
 }
 
 model Service {
@@ -855,26 +938,50 @@ model Quotation {
   @@index([status])
 }
 
+// ======================================================================================
+// BLOG & COMMUNITY
+// ======================================================================================
+
 model BlogPost {
-  id             Int            @id @default(autoincrement())
-  title          String
-  content        String
+  id             Int                   @id @default(autoincrement())
   authorId       String
-  isPublished    Boolean        @default(false)
+  isPublished    Boolean               @default(false)
   publishedAt    DateTime?
-  createdAt      DateTime       @default(now())
+  createdAt      DateTime              @default(now())
   updatedAt      DateTime
   blogCategoryId Int
-  type           BlogType       @default(OTHER)
-  dislikes       Int            @default(0)
-  likes          Int            @default(0)
-  author         Admin          @relation(fields: [authorId], references: [id])
-  blogCategory   BlogCategory   @relation(fields: [blogCategoryId], references: [id])
+  type           BlogType              @default(OTHER)
+  dislikes       Int                   @default(0)
+  likes          Int                   @default(0)
+  author         Admin                 @relation(fields: [authorId], references: [id])
+  blogCategory   BlogCategory          @relation(fields: [blogCategoryId], references: [id])
   blogReactions  BlogReaction[]
+  translations   BlogPostTranslation[]
 
   @@index([type])
   @@index([isPublished])
   @@index([publishedAt])
+}
+
+model BlogPostTranslation {
+  id              Int      @id @default(autoincrement())
+  blogPostId      Int
+  language        Language
+  title           String
+  slug            String
+  content         String   @db.Text
+  excerpt         String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  blogPost        BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+
+  @@unique([blogPostId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, blogPostId])
 }
 
 model BlogReaction {
@@ -895,12 +1002,37 @@ model BlogReaction {
 }
 
 model BlogCategory {
-  id          Int        @id @default(autoincrement())
-  name        String     @unique
-  description String
-  icon        String
-  href        String?
-  posts       BlogPost[]
+  id           Int                      @id @default(autoincrement())
+  icon         String
+  isActive     Boolean                  @default(true)
+  sortOrder    Int                      @default(0)
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+  posts        BlogPost[]
+  translations BlogCategoryTranslation[]
+
+  @@index([isActive, sortOrder])
+}
+
+model BlogCategoryTranslation {
+  id              Int          @id @default(autoincrement())
+  blogCategoryId  Int
+  language        Language
+  name            String
+  slug            String
+  description     String
+  href            String?
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  blogCategory    BlogCategory @relation(fields: [blogCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([blogCategoryId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, blogCategoryId])
 }
 
 model CommunityComment {
@@ -936,24 +1068,77 @@ model CommunityPost {
 }
 
 model CommunityCategory {
-  id            Int                    @id @default(autoincrement())
-  category      String                 @unique
-  href          String?
+  id            Int                           @id @default(autoincrement())
+  isActive      Boolean                       @default(true)
+  sortOrder     Int                           @default(0)
+  createdAt     DateTime                      @default(now())
+  updatedAt     DateTime                      @updatedAt
   subcategories CommunitySubCategory[]
+  translations  CommunityCategoryTranslation[]
+
+  @@index([isActive, sortOrder])
+}
+
+model CommunityCategoryTranslation {
+  id                  Int               @id @default(autoincrement())
+  communityCategoryId Int
+  language            Language
+  category            String
+  slug                String
+  href                String?
+  description         String?
+  metaTitle           String?
+  metaDescription     String?
+  metaKeywords        String[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  communityCategory   CommunityCategory @relation(fields: [communityCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([communityCategoryId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, communityCategoryId])
 }
 
 model CommunitySubCategory {
-  id                  Int               @id @default(autoincrement())
-  subCategory         String
+  id                  Int                              @id @default(autoincrement())
   communityCategoryId Int
-  href                String?
-  communityCategory   CommunityCategory @relation(fields: [communityCategoryId], references: [id])
+  isActive            Boolean                          @default(true)
+  sortOrder           Int                              @default(0)
+  createdAt           DateTime                         @default(now())
+  updatedAt           DateTime                         @updatedAt
+  communityCategory   CommunityCategory                @relation(fields: [communityCategoryId], references: [id])
+  translations        CommunitySubCategoryTranslation[]
+
+  @@index([communityCategoryId])
+  @@index([isActive, sortOrder])
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+model CommunitySubCategoryTranslation {
+  id                     Int                    @id @default(autoincrement())
+  communitySubCategoryId Int
+  language               Language
+  subCategory            String
+  slug                   String
+  href                   String?
+  description            String?
+  metaTitle              String?
+  metaDescription        String?
+  metaKeywords           String[]
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  communitySubCategory   CommunitySubCategory   @relation(fields: [communitySubCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([communitySubCategoryId, language])
+  @@unique([slug, language])
+  @@index([slug, language])
+  @@index([language, communitySubCategoryId])
+}
+
+// ======================================================================================
+// TRANSACTIONS & EXCHANGES
+// ======================================================================================
+
 model Transaction {
   id               Int             @id @default(autoincrement())
   kind             TransactionKind
@@ -984,6 +1169,10 @@ model Exchange {
   product_Exchange_requestedProductIdToProduct Product        @relation("Exchange_requestedProductIdToProduct", fields: [requestedProductId], references: [id])
   transaction                                  Transaction    @relation(fields: [transactionId], references: [id])
 }
+
+// ======================================================================================
+// PAYMENTS
+// ======================================================================================
 
 model Payment {
   id                                Int                    @id @default(autoincrement())
@@ -1102,10 +1291,10 @@ model PaymentWebhook {
   @@index([externalId])
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ======================================================================================
+// ORDERS & SHIPPING
+// ======================================================================================
+
 model ShippingStatus {
   id     Int           @id @default(autoincrement())
   status ShippingStage @default(PREPARING)
@@ -1145,6 +1334,10 @@ model OrderItem {
   @@index([productId])
   @@index([storeProductId])
 }
+
+// ======================================================================================
+// COMMUNICATION & NOTIFICATIONS
+// ======================================================================================
 
 model Message {
   id        Int      @id @default(autoincrement())
@@ -1217,10 +1410,10 @@ model Chat {
   message                        Message[]
 }
 
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ======================================================================================
+// ENVIRONMENTAL IMPACT
+// ======================================================================================
+
 model WaterImpactMessage {
   id       Int    @id @default(autoincrement())
   min      Float  @default(0.0)
@@ -1240,32 +1433,36 @@ model Co2ImpactMessage {
 }
 
 model MaterialImpactEstimate {
-  id                       Int                       @id @default(autoincrement())
-  materialType             String                    @unique
-  estimatedCo2SavingsKG    Float
-  estimatedWaterSavingsLT  Float
+  id                      Int    @id @default(autoincrement())
+  materialType            String @unique
+  estimatedCo2SavingsKG   Float
+  estimatedWaterSavingsLT Float
 
   productCategoryMaterials ProductCategoryMaterial[]
   storeProductMaterials    StoreProductMaterial[]
-  translations              MaterialImpactEstimateTranslation[]
+  translations             MaterialImpactEstimateTranslation[]
 
   @@index([materialType])
 }
 
 model MaterialImpactEstimateTranslation {
-  id                           Int                       @id @default(autoincrement())
-  materialImpactEstimateId     Int
-  language                     Language
-  materialTypeTranslation      String
+  id                       Int      @id @default(autoincrement())
+  materialImpactEstimateId Int
+  language                 Language
+  materialTypeTranslation  String
 
-  createdAt                    DateTime                  @default(now())
-  updatedAt                    DateTime                  @updatedAt
-  
-  materialImpactEstimate       MaterialImpactEstimate    @relation(fields: [materialImpactEstimateId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  materialImpactEstimate MaterialImpactEstimate @relation(fields: [materialImpactEstimateId], references: [id], onDelete: Cascade)
 
   @@unique([materialImpactEstimateId, language])
   @@index([language])
 }
+
+// ======================================================================================
+// ENGAGEMENT (Comments, Likes, Stories)
+// ======================================================================================
 
 model ProductComment {
   id             Int          @id @default(autoincrement())
@@ -1300,6 +1497,10 @@ model Story {
   sellerId    String
   seller      Seller   @relation(fields: [sellerId], references: [id])
 }
+
+// ======================================================================================
+// SEARCH & ANALYTICS
+// ======================================================================================
 
 model ItemView {
   id        Int      @id @default(autoincrement())
@@ -1416,6 +1617,21 @@ model SearchSynonym {
   @@index([isActive])
   @@index([term])
 }
+
+model UserSearchHistory {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  query       String
+  resultCount Int      @default(0)
+  searchedAt  DateTime @default(now())
+
+  @@index([query])
+  @@index([userId, searchedAt(sort: Desc)])
+}
+
+// ======================================================================================
+// SERVICE EXTENDED (Bookings, Credentials, Packages)
+// ======================================================================================
 
 model ServiceBooking {
   id                                       Int             @id @default(autoincrement())
@@ -1562,83 +1778,42 @@ model StoreProductReview {
   @@index([storeProductId])
 }
 
-model UserSearchHistory {
-  id          Int      @id @default(autoincrement())
-  userId      String
-  query       String
-  resultCount Int      @default(0)
-  searchedAt  DateTime @default(now())
+// ======================================================================================
+// ADVERTISEMENTS
+// ======================================================================================
 
-  @@index([query])
-  @@index([userId, searchedAt(sort: Desc)])
+model Advertisement {
+  id             Int               @id @default(autoincrement())
+  adType         AdvertisementType
+  price          Int
+  content        String
+  startDate      DateTime
+  endDate        DateTime
+  isActive       Boolean           @default(true)
+  sellerId       String
+  productId      Int?
+  storeProductId Int?
+  serviceId      Int?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  product        Product?          @relation(fields: [productId], references: [id])
+  seller         Seller            @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  service        Service?          @relation(fields: [serviceId], references: [id])
+  storeProduct   StoreProduct?     @relation(fields: [storeProductId], references: [id])
+
+  @@index([sellerId])
+  @@index([adType])
+  @@index([isActive])
+  @@index([startDate, endDate])
+  @@index([productId])
+  @@index([storeProductId])
+  @@index([serviceId])
 }
 
-model DepartmentCategoryTranslation {
-  id                   Int                @id @default(autoincrement())
-  departmentCategoryId Int
-  language             Language
-  name                 String
-  slug                 String
-  href                 String?
-  metaTitle            String?
-  metaDescription      String?
-  metaKeywords         String[]
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime
-  DepartmentCategory   DepartmentCategory @relation(fields: [departmentCategoryId], references: [id], onDelete: Cascade)
+// ======================================================================================
+// ENUMS
+// ======================================================================================
 
-  @@unique([departmentCategoryId, language])
-  @@unique([slug, language])
-  @@index([language, departmentCategoryId])
-  @@index([slug, language])
-}
-
-model DepartmentTranslation {
-  id              Int        @id @default(autoincrement())
-  departmentId    Int
-  language        Language
-  name            String
-  slug            String
-  href            String?
-  metaTitle       String?
-  metaDescription String?
-  metaKeywords    String[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime
-  Department      Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-
-  @@unique([departmentId, language])
-  @@unique([slug, language])
-  @@index([language, departmentId])
-  @@index([slug, language])
-}
-
-model ProductCategoryTranslation {
-  id                Int             @id @default(autoincrement())
-  productCategoryId Int
-  language          Language
-  name              String
-  slug              String
-  keywords          String[]
-  href              String?
-  metaTitle         String?
-  metaDescription   String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime
-  metaKeywords      String[]
-  ProductCategory   ProductCategory @relation(fields: [productCategoryId], references: [id], onDelete: Cascade)
-
-  @@unique([productCategoryId, language])
-  @@unique([slug, language])
-  @@index([language])
-  @@index([language, productCategoryId])
-  @@index([slug, language])
-}
-
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 enum PersonSubscriptionPlan {
   FREEMIUM
   BASIC
