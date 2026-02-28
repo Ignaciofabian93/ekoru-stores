@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Language, StoreCategory } from '@prisma/client';
-import { StoreCategoryRepository } from 'src/repositories/store-category.repository';
-import { I18nService } from 'src/common/i18n';
+import { StoreCategoryRepository } from '../repositories/store-category.repository';
+import { I18nService } from '../common/i18n';
 
 @Injectable()
 export class StoreCategoryService {
@@ -16,7 +16,7 @@ export class StoreCategoryService {
    * Gets a store category by its slug
    *
    * @param {string} slug - The store category slug
-   * @param {Language} language - The language for translation (optional, uses context if not provided)
+   * @param {Language} language - The language for translation (optional, uses default if not provided)
    * @returns {Promise<StoreCategory>} The store category
    * @throws {NotFoundException} If store category is not found
    *
@@ -27,7 +27,7 @@ export class StoreCategoryService {
     slug: string,
     language?: Language,
   ): Promise<StoreCategory> {
-    const lang = language || this.i18nService.getCurrentLanguage();
+    const lang = language ?? this.i18nService.getDefaultLanguage();
 
     this.logger.debug(
       `Getting store category by slug: ${slug}, language: ${lang}`,
@@ -52,7 +52,7 @@ export class StoreCategoryService {
    *
    * @param {number} limit - Maximum number of store categories to return (default: 20)
    * @param {number} offset - Number of store categories to skip (default: 0)
-   * @param {Language} language - The language for translations (optional, uses context if not provided)
+   * @param {Language} language - The language for translations (optional, uses default if not provided)
    * @returns {Promise<StoreCategory[]>} Array of store categories
    *
    * @example
@@ -63,7 +63,7 @@ export class StoreCategoryService {
     offset: number = 0,
     language?: Language,
   ): Promise<StoreCategory[]> {
-    const lang = language || this.i18nService.getCurrentLanguage();
+    const lang = language ?? this.i18nService.getDefaultLanguage();
 
     this.logger.debug(
       `Getting store categories with limit: ${limit}, offset: ${offset}, language: ${lang}`,

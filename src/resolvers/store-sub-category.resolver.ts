@@ -50,7 +50,7 @@ export class StoreSubCategoryResolver {
       `Query: getStoreSubCategoryBySlug with slug: ${slug} and language: ${language}`,
     );
 
-    context.i18nService.setCurrentLanguage(language);
+    context.language = language;
 
     return this.storeSubCategoryService.getStoreSubCategoryBySlug(
       slug,
@@ -81,7 +81,7 @@ export class StoreSubCategoryResolver {
       `Query: getStoreSubCategories with limit: ${limit}, offset: ${offset}, language: ${language}`,
     );
 
-    context.i18nService.setCurrentLanguage(language);
+    context.language = language;
 
     const storeSubCategories =
       await this.storeSubCategoryService.getStoreSubCategories(

@@ -9,6 +9,7 @@ import {
   ResolveReference,
   Parent,
 } from '@nestjs/graphql';
+import { Logger } from '@nestjs/common';
 import { CurrentSeller } from '../common/decorators';
 import { StoreSubCategoryEntity } from '../catalog-v2/entities';
 import { ProductEntity, SellerEntity } from './entities/product.entity';
@@ -25,6 +26,8 @@ import {
 
 @Resolver(() => ProductEntity)
 export class ProductsResolver {
+  private readonly logger = new Logger(ProductsResolver.name);
+
   constructor(
     private readonly productsService: ProductsService,
     private readonly impactService: ImpactService,
@@ -209,7 +212,7 @@ export class ProductsResolver {
 
       return await this.impactService.calculateSubCategoryImpact(subCategoryId);
     } catch (error) {
-      console.error('Error calculating environmental impact:', error);
+      this.logger.error('Error calculating environmental impact:', error);
       return null;
     }
   }

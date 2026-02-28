@@ -52,7 +52,7 @@ export class StoreCategoryResolver {
       `Query: getStoreCategoryBySlug - slug: ${slug}, language: ${language}`,
     );
 
-    context.i18nService.setCurrentLanguage(language);
+    context.language = language;
 
     return this.storeCategoryService.getStoreCategoryBySlug(slug, language);
   }
@@ -80,7 +80,7 @@ export class StoreCategoryResolver {
       `Query: getStoreCategories - limit: ${limit}, offset: ${offset}, language: ${language}`,
     );
 
-    context.i18nService.setCurrentLanguage(language);
+    context.language = language;
 
     const storeCategories = await this.storeCategoryService.getStoreCategories(
       limit,

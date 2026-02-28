@@ -3,35 +3,23 @@ import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { I18nService } from '../common/i18n';
 import { GraphQLContext } from '../types';
-import { CatalogRepository } from 'src/repositories/catalog.repository';
-import { StoreCategoryRepository } from 'src/repositories/store-category.repository';
-import { StoreCategoryService } from 'src/services/store-category.service';
-import { StoreSubCategoryRepository } from 'src/repositories/store-sub-category.repository';
+import { StoreCategoryRepository } from '../repositories/store-category.repository';
+import { StoreCategoryService } from '../services/store-category.service';
+import { StoreSubCategoryRepository } from '../repositories/store-sub-category.repository';
 
 /**
  * GraphQL Context Factory
  *
- * This factory function creates a fresh GraphQL context for each request.
- * It initializes DataLoaders, services, and extracts metadata from the request.
- *
- * CRITICAL: DataLoaders MUST be created fresh per request to prevent stale cache
- * and ensure data consistency across requests.
- *
- * @param {Request} req - Express request object
- * @param {Response} res - Express response object
- * @param {ModuleRef} moduleRef - NestJS module reference for dependency injection
- * @returns {GraphQLContext} The context object for this request
+ * Creates a fresh context object for each request. Language is resolved once
+ * from the Accept-Language header and stored in context.language. DataLoaders
+ * are created fresh per request to prevent stale cache across requests.
  */
 export function createGraphQLContext(
   req: Request,
   res: Response,
   moduleRef: ModuleRef,
 ): GraphQLContext {
-  // Resolve services and repositories from the NestJS DI container
   const prisma = moduleRef.get(PrismaService, { strict: false });
-  const catalogRepository = moduleRef.get(CatalogRepository, {
-    strict: false,
-  });
   const storeCategoryRepository = moduleRef.get(StoreCategoryRepository, {
     strict: false,
   });
@@ -42,30 +30,19 @@ export function createGraphQLContext(
     strict: false,
   });
 
+  // Parse Accept-Language header once per request
   const i18nService = moduleRef.get(I18nService, { strict: false });
+  const language = i18nService.parseAcceptLanguage(req.headers['accept-language']);
 
-  // Extract language from Accept-Language header
-  const acceptLanguage = req.headers['accept-language'];
-  const language = i18nService.parseAcceptLanguage(acceptLanguage);
-
-  // Extract seller ID and token from headers
   const sellerId = req.headers['x-seller-id'] as string | undefined;
   const token = req.headers.authorization?.replace('Bearer ', '');
 
-  // Create fresh DataLoaders for this request
+  // DataLoaders MUST be fresh per request to prevent stale cache
   const loaders = {
-    storeCatalog: catalogRepository.createTranslationLoader(),
-    // Store Category loaders
     storeCategoryTranslation: storeCategoryRepository.createTranslationLoader(),
     storeCategoryById: storeCategoryRepository.createStoreCategoryLoader(),
-
-    // Store Sub Category loaders
-    storeSubCategoryTranslation:
-      storeSubCategoryRepository.createTranslationLoader(),
-    storeSubCategories:
-      storeSubCategoryRepository.createStoreSubCategoryByCategoryLoader(),
-    storeSubCategoriesByStoreCategory:
-      storeSubCategoryRepository.createStoreSubCategoryByCategoryLoader(),
+    storeSubCategoryTranslation: storeSubCategoryRepository.createTranslationLoader(),
+    storeSubCategories: storeSubCategoryRepository.createStoreSubCategoryByCategoryLoader(),
   };
 
   return {
@@ -73,9 +50,7 @@ export function createGraphQLContext(
     res,
     language,
     prisma,
-    i18nService,
     storeCategoryService,
-    catalogRepository,
     storeCategoryRepository,
     storeSubCategoryRepository,
     loaders,
@@ -85,10 +60,7 @@ export function createGraphQLContext(
 }
 
 /**
- * Context factory wrapper for use in GraphQLModule configuration
- *
- * This function returns a context factory that can be used in the GraphQL module
- * configuration. It provides access to the NestJS ModuleRef for dependency injection.
+ * Context factory wrapper for GraphQLModule configuration.
  *
  * @example
  * GraphQLModule.forRoot({

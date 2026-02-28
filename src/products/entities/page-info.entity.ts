@@ -22,4 +22,13 @@ export class PageInfoEntity {
 
   @Field(() => Boolean, { description: 'Whether there is a previous page' })
   hasPreviousPage: boolean;
+
+  @Field(() => String, { nullable: true })
+  startCursor: string | null;
+
+  @Field(() => String, { nullable: true })
+  endCursor: string | null;
+
+  @Field(() => Int)
+  pageSize: number;
 }

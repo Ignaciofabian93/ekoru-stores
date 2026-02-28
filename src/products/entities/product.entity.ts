@@ -5,27 +5,10 @@ import {
   Float,
   ID,
   Directive,
-  registerEnumType,
 } from '@nestjs/graphql';
 import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
 import { EnvironmentalImpactEntity } from './environmental-impact.entity';
-import { StoreSubCategoryEntity } from 'src/catalog-v2/entities';
-
-// Register Prisma enums for GraphQL
-registerEnumType(Badge, {
-  name: 'Badge',
-  description: 'Product badge types for special designations',
-});
-
-registerEnumType(WeightUnit, {
-  name: 'WeightUnit',
-  description: 'Units for measuring weight',
-});
-
-registerEnumType(DimensionUnit, {
-  name: 'DimensionUnit',
-  description: 'Units for measuring dimensions (CM, M, MM, INCH, FOOT)',
-});
+import { StoreSubCategoryEntity } from '../../catalog-v2/entities';
 
 /**
  * GraphQL Seller Entity Reference

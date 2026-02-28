@@ -28,7 +28,7 @@ export class StoreSubCategoryService {
     slug: string,
     language?: Language,
   ): Promise<StoreSubCategory> {
-    const lang = language || this.i18nService.getCurrentLanguage();
+    const lang = language ?? this.i18nService.getDefaultLanguage();
 
     this.logger.debug(
       `Fetching store sub category with slug: ${slug} in language: ${lang}`,
@@ -64,7 +64,7 @@ export class StoreSubCategoryService {
     offset: number,
     language?: Language,
   ): Promise<StoreSubCategory[]> {
-    const lang = language || this.i18nService.getCurrentLanguage();
+    const lang = language ?? this.i18nService.getDefaultLanguage();
 
     this.logger.debug(
       `Fetching store sub categories with limit: ${limit}, offset: ${offset} in language: ${lang}`,

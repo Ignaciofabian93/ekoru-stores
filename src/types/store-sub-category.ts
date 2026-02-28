@@ -6,6 +6,8 @@ export type StoreSubCategory = {
   storeCategoryId: number;
   isActive: boolean;
   sortOrder: number;
+  featuredFrom: Date | null;
+  featuredUntil: Date | null;
   averageWeight: number | null;
   size: ProductSize | null;
   weightUnit: WeightUnit | null;

@@ -10,24 +10,7 @@ import { Language } from '@prisma/client';
  */
 @Injectable()
 export class I18nService {
-  private readonly DEFAULT_LANGUAGE = Language.ES;
-  private currentLanguage: Language = this.DEFAULT_LANGUAGE;
-
-  /**
-   * Gets the current language for the request context
-   * @returns {Language} The current language enum value
-   */
-  getCurrentLanguage(): Language {
-    return this.currentLanguage;
-  }
-
-  /**
-   * Sets the current language for the request context
-   * @param {Language} language - The language to set
-   */
-  setCurrentLanguage(language: Language): void {
-    this.currentLanguage = language;
-  }
+  readonly DEFAULT_LANGUAGE = Language.ES;
 
   /**
    * Parses Accept-Language header and returns the best matching Language
