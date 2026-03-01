@@ -28,7 +28,7 @@ export class ImpactRepository {
   /**
    * Get material impact estimate by ID
    */
-  async getMaterialImpactById(materialTypeId: number) {
+  getMaterialImpactById(materialTypeId: number) {
     return this.prisma.materialImpactEstimate.findUnique({
       where: {
         id: materialTypeId,
