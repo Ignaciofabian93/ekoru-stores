@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type { StoreCategoryTranslation } from '../types/store-category';
 import DataLoader from 'dataloader';
-import { Language } from '@prisma/client';
+import { Language } from '../graphql/enums';
 
 @Injectable()
 export class CatalogRepository {
@@ -119,7 +119,7 @@ export class CatalogRepository {
         name: store.translations[0]?.name || '',
         slug: store.translations[0]?.slug || '',
         href: store.translations[0]?.href || '',
-        subCategories: store.storeSubCategory.map((subCategory) => ({
+        subCategoryItems: store.storeSubCategory.map((subCategory) => ({
           id: subCategory.id,
           name: subCategory.translations[0]?.name || '',
           slug: subCategory.translations[0]?.slug || '',

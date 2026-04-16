@@ -1,6 +1,6 @@
 import { Resolver, Query, Args } from '@nestjs/graphql';
 import { Logger } from '@nestjs/common';
-import { Language } from '@prisma/client';
+import { Language } from '../graphql/enums';
 import { CatalogService } from '../services/catalog.service';
 import { StoreCatalogItemEntity } from '../catalog-v2/entities/catalog.entity';
 import type { StoreCatalog } from '../types/catalog';

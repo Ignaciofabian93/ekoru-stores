@@ -4,6 +4,7 @@ import { ProductsService } from './products.service';
 import { ProductsResolver, SellerReferenceResolver } from './products.resolver';
 import { ImpactService } from '../services/impact.service';
 import { ImpactRepository } from '../repositories/impact.repository';
+import { I18nService } from '../common/i18n';
 
 /**
  * Products Module
@@ -18,6 +19,7 @@ import { ImpactRepository } from '../repositories/impact.repository';
 @Module({
   imports: [PrismaModule],
   providers: [
+    I18nService,
     ProductsService,
     ProductsResolver,
     SellerReferenceResolver,

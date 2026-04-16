@@ -1,3 +1,5 @@
+name: 'ekoru-stores-prod'
+
 services:
   ekoru-stores:
     image: ekoru-stores:prod

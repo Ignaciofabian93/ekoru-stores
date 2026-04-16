@@ -25,5 +25,5 @@ export class StoreCategoryEntity {
   @Field(() => [StoreSubCategoryEntity], {
     description: 'List of sub-categories under this store category',
   })
-  storeSubCategories?: StoreSubCategoryEntity[];
+  storeSubCategory?: StoreSubCategoryEntity[];
 }

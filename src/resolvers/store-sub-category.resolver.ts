@@ -17,7 +17,7 @@ import {
   StoreSubCategoryEntity,
   StoreSubCategoryTranslationEntity,
 } from '../catalog-v2/entities';
-import { Language } from '@prisma/client';
+import { Language } from '../graphql/enums';
 import { StoreSubCategoryService } from '../services/store-sub-category.service';
 
 @Resolver(() => StoreSubCategoryEntity)

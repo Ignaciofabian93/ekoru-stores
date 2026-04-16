@@ -28,7 +28,7 @@ export class StoreSubCategoryEntity {
   id: number;
 
   @Field(() => Int)
-  storeSubCategoryId: number;
+  storeCategoryId: number;
 
   @Field(() => Float, { nullable: true })
   averageWeight?: number;

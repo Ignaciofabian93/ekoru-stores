@@ -55,12 +55,12 @@ import { StoreSubCategoryResolver } from '../resolvers/store-sub-category.resolv
   exports: [
     // Export services and repositories for use in other modules
     I18nService,
-    StoreCategoryRepository,
-    StoreSubCategoryRepository,
-    StoreCategoryService,
-    StoreSubCategoryService,
     CatalogRepository,
     CatalogService,
+    StoreCategoryRepository,
+    StoreCategoryService,
+    StoreSubCategoryRepository,
+    StoreSubCategoryService,
   ],
 })
 export class CatalogV2Module {}

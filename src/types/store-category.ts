@@ -1,4 +1,4 @@
-import { Language } from '@prisma/client';
+import { Language } from '../graphql/enums';
 
 export type StoreCategory = {
   id: number;

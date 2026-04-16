@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Language } from '@prisma/client';
+import { Language } from '../graphql/enums';
 import { I18nService } from '../common/i18n';
 import { StoreSubCategoryRepository } from '../repositories/store-sub-category.repository';
 import { StoreSubCategory } from '../types/store-sub-category';
@@ -41,7 +41,9 @@ export class StoreSubCategoryService {
 
     if (!storeSubCategory) {
       throw new NotFoundException(
-        `Store sub category with slug '${slug}' not found for language '${lang}'`,
+        this.i18nService.translate('errors.store_subcategory_not_found', lang, {
+          slug,
+        }),
       );
     }
 
@@ -71,11 +73,18 @@ export class StoreSubCategoryService {
     );
 
     if (limit < 1 || limit > 100) {
-      throw new Error('Limit must be between 1 and 100');
+      throw new Error(
+        this.i18nService.translate('errors.limit_out_of_range', lang, {
+          min: '1',
+          max: '100',
+        }),
+      );
     }
 
     if (offset < 0) {
-      throw new Error('Offset must be greater than or equal to 0');
+      throw new Error(
+        this.i18nService.translate('errors.offset_negative', lang),
+      );
     }
 
     const storeSubCategories = await this.storeSubCategoryRepository.findAll(

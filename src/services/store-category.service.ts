@@ -1,7 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Language, StoreCategory } from '@prisma/client';
+import { StoreCategory } from '@prisma/client';
 import { StoreCategoryRepository } from '../repositories/store-category.repository';
 import { I18nService } from '../common/i18n';
+import { Language } from '../graphql/enums';
 
 @Injectable()
 export class StoreCategoryService {
@@ -40,7 +41,9 @@ export class StoreCategoryService {
 
     if (!storeCategory) {
       throw new NotFoundException(
-        `Store category with slug '${slug}' not found for language '${lang}'`,
+        this.i18nService.translate('errors.store_category_not_found', lang, {
+          slug,
+        }),
       );
     }
 
@@ -70,11 +73,18 @@ export class StoreCategoryService {
     );
 
     if (limit < 1 || limit > 100) {
-      throw new Error('Limit must be between 1 and 100');
+      throw new Error(
+        this.i18nService.translate('errors.limit_out_of_range', lang, {
+          min: '1',
+          max: '100',
+        }),
+      );
     }
 
     if (offset < 0) {
-      throw new Error('Offset cannot be negative');
+      throw new Error(
+        this.i18nService.translate('errors.offset_negative', lang),
+      );
     }
 
     const storeCategories = await this.storeCategoryRepository.findAll(
@@ -101,7 +111,13 @@ export class StoreCategoryService {
     const storeCategory = await loader.load(id);
 
     if (!storeCategory) {
-      throw new NotFoundException(`Store category with ID '${id}' not found`);
+      throw new NotFoundException(
+        this.i18nService.translate(
+          'errors.store_category_id_not_found',
+          this.i18nService.getDefaultLanguage(),
+          { id: String(id) },
+        ),
+      );
     }
 
     return storeCategory;

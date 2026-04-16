@@ -1,6 +1,13 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { I18nService } from '../common/i18n';
 import {
   StoreProductFilterInput,
   StoreProductSortInput,
@@ -12,7 +19,10 @@ import {
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly i18nService: I18nService,
+  ) {}
 
   /**
    * Get a single store product by ID
@@ -26,7 +36,13 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Store product with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.translate(
+          'errors.store_product_not_found',
+          this.i18nService.getDefaultLanguage(),
+          { id: String(id) },
+        ),
+      );
     }
 
     return product;
@@ -218,7 +234,12 @@ export class ProductsService {
    */
   async addProduct(input: AddStoreProductInput, sellerId?: string) {
     if (!sellerId) {
-      throw new NotFoundException('Seller authentication required');
+      throw new UnauthorizedException(
+        this.i18nService.translate(
+          'errors.seller_auth_required',
+          this.i18nService.getDefaultLanguage(),
+        ),
+      );
     }
 
     const product = await this.prisma.storeProduct.create({
@@ -239,8 +260,12 @@ export class ProductsService {
    * Update an existing product
    */
   async updateProduct(input: UpdateStoreProductInput, sellerId?: string) {
+    const lang = this.i18nService.getDefaultLanguage();
+
     if (!sellerId) {
-      throw new NotFoundException('Seller authentication required');
+      throw new UnauthorizedException(
+        this.i18nService.translate('errors.seller_auth_required', lang),
+      );
     }
 
     const product = await this.prisma.storeProduct.findUnique({
@@ -248,12 +273,16 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${input.id} not found`);
+      throw new NotFoundException(
+        this.i18nService.translate('errors.store_product_not_found', lang, {
+          id: String(input.id),
+        }),
+      );
     }
 
     if (product.sellerId !== sellerId) {
-      throw new NotFoundException(
-        'You do not have permission to update this product',
+      throw new ForbiddenException(
+        this.i18nService.translate('errors.product_update_forbidden', lang),
       );
     }
 
@@ -276,8 +305,12 @@ export class ProductsService {
    * Delete a store product (soft delete)
    */
   async deleteProduct(id: number, sellerId?: string) {
+    const lang = this.i18nService.getDefaultLanguage();
+
     if (!sellerId) {
-      throw new NotFoundException('Seller authentication required');
+      throw new UnauthorizedException(
+        this.i18nService.translate('errors.seller_auth_required', lang),
+      );
     }
 
     const product = await this.prisma.storeProduct.findUnique({
@@ -285,12 +318,16 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Store product with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.translate('errors.store_product_not_found', lang, {
+          id: String(id),
+        }),
+      );
     }
 
     if (product.sellerId !== sellerId) {
-      throw new NotFoundException(
-        'You do not have permission to delete this product',
+      throw new ForbiddenException(
+        this.i18nService.translate('errors.product_delete_forbidden', lang),
       );
     }
 
@@ -312,8 +349,12 @@ export class ProductsService {
    * Toggle store product active status
    */
   async toggleProductActive(id: number, sellerId?: string) {
+    const lang = this.i18nService.getDefaultLanguage();
+
     if (!sellerId) {
-      throw new NotFoundException('Seller authentication required');
+      throw new UnauthorizedException(
+        this.i18nService.translate('errors.seller_auth_required', lang),
+      );
     }
 
     const product = await this.prisma.storeProduct.findUnique({
@@ -321,12 +362,16 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Store product with ID ${id} not found`);
+      throw new NotFoundException(
+        this.i18nService.translate('errors.store_product_not_found', lang, {
+          id: String(id),
+        }),
+      );
     }
 
     if (product.sellerId !== sellerId) {
-      throw new NotFoundException(
-        'You do not have permission to modify this product',
+      throw new ForbiddenException(
+        this.i18nService.translate('errors.product_modify_forbidden', lang),
       );
     }
 
@@ -374,13 +419,16 @@ export class ProductsService {
     const hasPreviousPage = page > 1;
 
     return {
-      edges: items,
+      nodes: items,
       pageInfo: {
         currentPage: page,
         totalPages,
         totalCount,
         hasNextPage,
         hasPreviousPage,
+        pageSize,
+        startCursor: null,
+        endCursor: null,
       },
     };
   }
@@ -395,7 +443,7 @@ export class ProductsService {
       };
     }
 
-    const where: any = {
+    const where: Prisma.StoreProductWhereInput = {
       isActive: true,
       deletedAt: null,
     };
@@ -408,11 +456,11 @@ export class ProductsService {
     }
 
     if (filter.minPrice !== undefined) {
-      where.price = { ...where.price, gte: filter.minPrice };
+      where.price = { gte: filter.minPrice };
     }
 
     if (filter.maxPrice !== undefined) {
-      where.price = { ...where.price, lte: filter.maxPrice };
+      where.price = { lte: filter.maxPrice };
     }
 
     if (filter.brand) {

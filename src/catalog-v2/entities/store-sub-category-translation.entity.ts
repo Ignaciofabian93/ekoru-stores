@@ -1,5 +1,5 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import { Language } from '@prisma/client';
+import { Language } from '../../graphql/enums';
 
 /**
  * GraphQL StoreSubCategoryTranslation Entity
@@ -32,9 +32,6 @@ export class StoreSubCategoryTranslationEntity {
 
   @Field(() => String, { nullable: true })
   metaDescription?: string;
-
-  @Field(() => [String])
-  metaKeywords: string[];
 
   @Field(() => Date)
   createdAt: Date;

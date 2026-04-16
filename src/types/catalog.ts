@@ -2,7 +2,7 @@ export type StoreCatalog = {
   id: number;
   name: string;
   href: string;
-  subCategories: {
+  subCategoryItems: {
     id: number;
     name: string;
     href: string;
