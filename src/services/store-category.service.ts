@@ -24,10 +24,13 @@ export class StoreCategoryService {
    * @example
    * const dept = await getStoreCategoryBySlug('tecnologia', Language.ES);
    */
-  async getStoreCategoryBySlug(
-    slug: string,
-    language?: Language,
-  ): Promise<StoreCategory> {
+  async getStoreCategoryBySlug({
+    slug,
+    language,
+  }: {
+    slug: string;
+    language?: Language;
+  }): Promise<StoreCategory> {
     const lang = language ?? this.i18nService.getDefaultLanguage();
 
     this.logger.debug(
@@ -61,11 +64,15 @@ export class StoreCategoryService {
    * @example
    * const storeCategories = await getStoreCategories(10, 0, Language.ES);
    */
-  async getStoreCategories(
-    limit: number = 20,
-    offset: number = 0,
-    language?: Language,
-  ): Promise<StoreCategory[]> {
+  async getStoreCategories({
+    limit = 20,
+    offset = 0,
+    language,
+  }: {
+    limit?: number;
+    offset?: number;
+    language?: Language;
+  }): Promise<StoreCategory[]> {
     const lang = language ?? this.i18nService.getDefaultLanguage();
 
     this.logger.debug(

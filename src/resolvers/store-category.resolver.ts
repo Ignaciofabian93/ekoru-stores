@@ -54,7 +54,7 @@ export class StoreCategoryResolver {
 
     context.language = language;
 
-    return this.storeCategoryService.getStoreCategoryBySlug(slug, language);
+    return this.storeCategoryService.getStoreCategoryBySlug({ slug, language });
   }
 
   /**
@@ -82,11 +82,11 @@ export class StoreCategoryResolver {
 
     context.language = language;
 
-    const storeCategories = await this.storeCategoryService.getStoreCategories(
+    const storeCategories = await this.storeCategoryService.getStoreCategories({
       limit,
       offset,
       language,
-    );
+    });
 
     if (storeCategories.length > 0) {
       const storeCategoryIds = storeCategories.map((cat) => cat.id);

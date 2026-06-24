@@ -38,13 +38,20 @@ export interface GraphQLContext {
 
   // DataLoaders - Fresh per request to prevent stale data
   loaders: {
-    storeCategoryTranslation: DataLoader<string, StoreCategoryTranslation | null>;
+    storeCategoryTranslation: DataLoader<
+      string,
+      StoreCategoryTranslation | null
+    >;
     storeCategoryById: DataLoader<number, StoreCategory | null>;
     storeSubCategories: DataLoader<number, StoreSubCategory[]>;
-    storeSubCategoryTranslation: DataLoader<string, StoreSubCategoryTranslation | null>;
+    storeSubCategoryTranslation: DataLoader<
+      string,
+      StoreSubCategoryTranslation | null
+    >;
   };
 
   sellerId?: string;
+  adminId?: string;
   token?: string;
 }
 

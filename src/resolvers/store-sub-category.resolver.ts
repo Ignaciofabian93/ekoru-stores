@@ -52,10 +52,10 @@ export class StoreSubCategoryResolver {
 
     context.language = language;
 
-    return this.storeSubCategoryService.getStoreSubCategoryBySlug(
+    return this.storeSubCategoryService.getStoreSubCategoryBySlug({
       slug,
       language,
-    );
+    });
   }
 
   /**
@@ -84,11 +84,11 @@ export class StoreSubCategoryResolver {
     context.language = language;
 
     const storeSubCategories =
-      await this.storeSubCategoryService.getStoreSubCategories(
+      await this.storeSubCategoryService.getStoreSubCategories({
         limit,
         offset,
         language,
-      );
+      });
 
     if (storeSubCategories.length > 0) {
       const categoryIds = storeSubCategories.map((cat) => cat.id);

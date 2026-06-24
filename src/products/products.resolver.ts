@@ -10,7 +10,7 @@ import {
   Parent,
 } from '@nestjs/graphql';
 import { Logger } from '@nestjs/common';
-import { CurrentSeller } from '../common/decorators';
+import { CurrentSeller, CurrentAdmin } from '../common/decorators';
 import { StoreSubCategoryEntity } from '../catalog-v2/entities';
 import { ProductEntity, SellerEntity } from './entities/product.entity';
 import { ProductConnectionEntity } from './entities/product-connection.entity';
@@ -50,7 +50,7 @@ export class ProductsResolver {
     @Args('sort', { type: () => StoreProductSortInput, nullable: true })
     sort?: StoreProductSortInput,
   ) {
-    return this.productsService.getProducts(page, pageSize, filter, sort);
+    return this.productsService.getProducts({ page, pageSize, filter, sort });
   }
 
   @Query(() => ProductConnectionEntity, {
@@ -66,13 +66,13 @@ export class ProductsResolver {
     @Args('sort', { type: () => StoreProductSortInput, nullable: true })
     sort?: StoreProductSortInput,
   ) {
-    return this.productsService.getProductsBySeller(
+    return this.productsService.getProductsBySeller({
       sellerId,
       page,
       pageSize,
       filter,
       sort,
-    );
+    });
   }
 
   @Query(() => ProductConnectionEntity, {
@@ -88,13 +88,13 @@ export class ProductsResolver {
     @Args('sort', { type: () => StoreProductSortInput, nullable: true })
     sort?: StoreProductSortInput,
   ) {
-    return this.productsService.getProductsBySubCategory(
-      Number(subCategoryId),
+    return this.productsService.getProductsBySubCategory({
+      subCategoryId: Number(subCategoryId),
       page,
       pageSize,
       filter,
       sort,
-    );
+    });
   }
 
   /**
@@ -116,13 +116,13 @@ export class ProductsResolver {
     @Args('sort', { type: () => StoreProductSortInput, nullable: true })
     sort?: StoreProductSortInput,
   ) {
-    return this.productsService.getProductsByStoreCategory(
-      Number(categoryId),
+    return this.productsService.getProductsByStoreCategory({
+      categoryId: Number(categoryId),
       page,
       pageSize,
       filter,
       sort,
-    );
+    });
   }
 
   @Query(() => ProductConnectionEntity, {
@@ -137,12 +137,12 @@ export class ProductsResolver {
     @Args('sort', { type: () => StoreProductSortInput, nullable: true })
     sort?: StoreProductSortInput,
   ) {
-    return this.productsService.getProductsOnOffer(
+    return this.productsService.getProductsOnOffer({
       page,
       pageSize,
       filter,
       sort,
-    );
+    });
   }
 
   @Mutation(() => ProductEntity, { nullable: true, name: 'addStoreProduct' })
@@ -150,23 +150,29 @@ export class ProductsResolver {
     @Args('input') input: AddStoreProductInput,
     @CurrentSeller() sellerId?: string,
   ) {
-    return this.productsService.addProduct(input, sellerId);
+    return this.productsService.addProduct({ input, sellerId });
   }
 
   @Mutation(() => ProductEntity, { nullable: true, name: 'updateStoreProduct' })
   async updateProduct(
     @Args('input') input: UpdateStoreProductInput,
     @CurrentSeller() sellerId?: string,
+    @CurrentAdmin() adminId?: string,
   ) {
-    return this.productsService.updateProduct(input, sellerId);
+    return this.productsService.updateProduct({ input, sellerId, adminId });
   }
 
   @Mutation(() => ProductEntity, { nullable: true, name: 'deleteStoreProduct' })
   async deleteProduct(
     @Args('id', { type: () => ID }) id: string,
     @CurrentSeller() sellerId?: string,
+    @CurrentAdmin() adminId?: string,
   ) {
-    return this.productsService.deleteProduct(Number(id), sellerId);
+    return this.productsService.deleteProduct({
+      id: Number(id),
+      sellerId,
+      adminId,
+    });
   }
 
   @Mutation(() => ProductEntity, {
@@ -176,8 +182,13 @@ export class ProductsResolver {
   async toggleProductActive(
     @Args('id', { type: () => ID }) id: string,
     @CurrentSeller() sellerId?: string,
+    @CurrentAdmin() adminId?: string,
   ) {
-    return this.productsService.toggleProductActive(Number(id), sellerId);
+    return this.productsService.toggleProductActive({
+      id: Number(id),
+      sellerId,
+      adminId,
+    });
   }
 
   // Field resolvers

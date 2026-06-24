@@ -51,12 +51,17 @@ export class ProductsService {
   /**
    * Get all store products with pagination and filters
    */
-  async getProducts(
-    page: number,
-    pageSize: number,
-    filter?: StoreProductFilterInput,
-    sort?: StoreProductSortInput,
-  ) {
+  async getProducts({
+    page,
+    pageSize,
+    filter,
+    sort,
+  }: {
+    page: number;
+    pageSize: number;
+    filter?: StoreProductFilterInput;
+    sort?: StoreProductSortInput;
+  }) {
     const skip = (page - 1) * pageSize;
     const where = this.buildWhereClause(filter);
     const orderBy = this.buildOrderBy(sort);
@@ -80,13 +85,19 @@ export class ProductsService {
   /**
    * Get store products by seller ID
    */
-  async getProductsBySeller(
-    sellerId: string,
-    page: number,
-    pageSize: number,
-    filter?: StoreProductFilterInput,
-    sort?: StoreProductSortInput,
-  ) {
+  async getProductsBySeller({
+    sellerId,
+    page,
+    pageSize,
+    filter,
+    sort,
+  }: {
+    sellerId: string;
+    page: number;
+    pageSize: number;
+    filter?: StoreProductFilterInput;
+    sort?: StoreProductSortInput;
+  }) {
     const skip = (page - 1) * pageSize;
     const where = {
       ...this.buildWhereClause(filter),
@@ -114,13 +125,19 @@ export class ProductsService {
    * Get store products by Store SubCategory ID
    * Returns only products in this specific subcategory
    */
-  async getProductsBySubCategory(
-    subCategoryId: number,
-    page: number,
-    pageSize: number,
-    filter?: StoreProductFilterInput,
-    sort?: StoreProductSortInput,
-  ) {
+  async getProductsBySubCategory({
+    subCategoryId,
+    page,
+    pageSize,
+    filter,
+    sort,
+  }: {
+    subCategoryId: number;
+    page: number;
+    pageSize: number;
+    filter?: StoreProductFilterInput;
+    sort?: StoreProductSortInput;
+  }) {
     const skip = (page - 1) * pageSize;
     const where = {
       ...this.buildWhereClause(filter),
@@ -148,13 +165,19 @@ export class ProductsService {
    * Get store products by Store Category ID
    * Returns all products from all subcategories under this category
    */
-  async getProductsByStoreCategory(
-    categoryId: number,
-    page: number,
-    pageSize: number,
-    filter?: StoreProductFilterInput,
-    sort?: StoreProductSortInput,
-  ) {
+  async getProductsByStoreCategory({
+    categoryId,
+    page,
+    pageSize,
+    filter,
+    sort,
+  }: {
+    categoryId: number;
+    page: number;
+    pageSize: number;
+    filter?: StoreProductFilterInput;
+    sort?: StoreProductSortInput;
+  }) {
     // First, get all subcategory IDs under this store category
     const subCategories = await this.prisma.storeSubCategory.findMany({
       where: {
@@ -200,12 +223,17 @@ export class ProductsService {
   /**
    * Get products on offer/sale
    */
-  async getProductsOnOffer(
-    page: number,
-    pageSize: number,
-    filter?: StoreProductFilterInput,
-    sort?: StoreProductSortInput,
-  ) {
+  async getProductsOnOffer({
+    page,
+    pageSize,
+    filter,
+    sort,
+  }: {
+    page: number;
+    pageSize: number;
+    filter?: StoreProductFilterInput;
+    sort?: StoreProductSortInput;
+  }) {
     const skip = (page - 1) * pageSize;
     const where = {
       ...this.buildWhereClause(filter),
@@ -232,7 +260,13 @@ export class ProductsService {
   /**
    * Add a new product
    */
-  async addProduct(input: AddStoreProductInput, sellerId?: string) {
+  async addProduct({
+    input,
+    sellerId,
+  }: {
+    input: AddStoreProductInput;
+    sellerId?: string;
+  }) {
     if (!sellerId) {
       throw new UnauthorizedException(
         this.i18nService.translate(
@@ -259,10 +293,18 @@ export class ProductsService {
   /**
    * Update an existing product
    */
-  async updateProduct(input: UpdateStoreProductInput, sellerId?: string) {
+  async updateProduct({
+    input,
+    sellerId,
+    adminId,
+  }: {
+    input: UpdateStoreProductInput;
+    sellerId?: string;
+    adminId?: string;
+  }) {
     const lang = this.i18nService.getDefaultLanguage();
 
-    if (!sellerId) {
+    if (!sellerId && !adminId) {
       throw new UnauthorizedException(
         this.i18nService.translate('errors.seller_auth_required', lang),
       );
@@ -280,7 +322,7 @@ export class ProductsService {
       );
     }
 
-    if (product.sellerId !== sellerId) {
+    if (!adminId && product.sellerId !== sellerId) {
       throw new ForbiddenException(
         this.i18nService.translate('errors.product_update_forbidden', lang),
       );
@@ -304,10 +346,18 @@ export class ProductsService {
   /**
    * Delete a store product (soft delete)
    */
-  async deleteProduct(id: number, sellerId?: string) {
+  async deleteProduct({
+    id,
+    sellerId,
+    adminId,
+  }: {
+    id: number;
+    sellerId?: string;
+    adminId?: string;
+  }) {
     const lang = this.i18nService.getDefaultLanguage();
 
-    if (!sellerId) {
+    if (!sellerId && !adminId) {
       throw new UnauthorizedException(
         this.i18nService.translate('errors.seller_auth_required', lang),
       );
@@ -325,7 +375,7 @@ export class ProductsService {
       );
     }
 
-    if (product.sellerId !== sellerId) {
+    if (!adminId && product.sellerId !== sellerId) {
       throw new ForbiddenException(
         this.i18nService.translate('errors.product_delete_forbidden', lang),
       );
@@ -348,10 +398,18 @@ export class ProductsService {
   /**
    * Toggle store product active status
    */
-  async toggleProductActive(id: number, sellerId?: string) {
+  async toggleProductActive({
+    id,
+    sellerId,
+    adminId,
+  }: {
+    id: number;
+    sellerId?: string;
+    adminId?: string;
+  }) {
     const lang = this.i18nService.getDefaultLanguage();
 
-    if (!sellerId) {
+    if (!sellerId && !adminId) {
       throw new UnauthorizedException(
         this.i18nService.translate('errors.seller_auth_required', lang),
       );
@@ -369,7 +427,7 @@ export class ProductsService {
       );
     }
 
-    if (product.sellerId !== sellerId) {
+    if (!adminId && product.sellerId !== sellerId) {
       throw new ForbiddenException(
         this.i18nService.translate('errors.product_modify_forbidden', lang),
       );

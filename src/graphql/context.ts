@@ -32,17 +32,22 @@ export function createGraphQLContext(
 
   // Parse Accept-Language header once per request
   const i18nService = moduleRef.get(I18nService, { strict: false });
-  const language = i18nService.parseAcceptLanguage(req.headers['accept-language']);
+  const language = i18nService.parseAcceptLanguage(
+    req.headers['accept-language'],
+  );
 
   const sellerId = req.headers['x-seller-id'] as string | undefined;
+  const adminId = req.headers['x-admin-id'] as string | undefined;
   const token = req.headers.authorization?.replace('Bearer ', '');
 
   // DataLoaders MUST be fresh per request to prevent stale cache
   const loaders = {
     storeCategoryTranslation: storeCategoryRepository.createTranslationLoader(),
     storeCategoryById: storeCategoryRepository.createStoreCategoryLoader(),
-    storeSubCategoryTranslation: storeSubCategoryRepository.createTranslationLoader(),
-    storeSubCategories: storeSubCategoryRepository.createStoreSubCategoryByCategoryLoader(),
+    storeSubCategoryTranslation:
+      storeSubCategoryRepository.createTranslationLoader(),
+    storeSubCategories:
+      storeSubCategoryRepository.createStoreSubCategoryByCategoryLoader(),
   };
 
   return {
@@ -55,6 +60,7 @@ export function createGraphQLContext(
     storeSubCategoryRepository,
     loaders,
     sellerId,
+    adminId,
     token,
   };
 }
