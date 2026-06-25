@@ -448,6 +448,96 @@ export class ProductsService {
   }
 
   /**
+   * Toggle the current seller's favorite mark on a store product. Idempotent
+   * per (product, seller). Returns the product so `isLiked` re-resolves.
+   */
+  async toggleProductLike({
+    storeProductId,
+    sellerId,
+  }: {
+    storeProductId: number;
+    sellerId?: string;
+  }) {
+    const lang = this.i18nService.getDefaultLanguage();
+
+    if (!sellerId) {
+      throw new UnauthorizedException(
+        this.i18nService.translate('errors.seller_auth_required', lang),
+      );
+    }
+
+    const product = await this.prisma.storeProduct.findUnique({
+      where: { id: storeProductId },
+      include: { storeSubCategory: true },
+    });
+
+    if (!product || product.deletedAt) {
+      throw new NotFoundException(
+        this.i18nService.translate('errors.store_product_not_found', lang, {
+          id: String(storeProductId),
+        }),
+      );
+    }
+
+    const existing = await this.prisma.storeProductLike.findUnique({
+      where: { storeProductId_sellerId: { storeProductId, sellerId } },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await this.prisma.storeProductLike.delete({ where: { id: existing.id } });
+    } else {
+      await this.prisma.storeProductLike.create({
+        data: { storeProductId, sellerId },
+      });
+    }
+
+    return product;
+  }
+
+  /**
+   * Paginated list of the current seller's favorite store products. Inactive or
+   * soft-deleted products are excluded so unavailable favorites drop off.
+   */
+  async getMyFavorites({
+    sellerId,
+    page,
+    pageSize,
+  }: {
+    sellerId?: string;
+    page: number;
+    pageSize: number;
+  }) {
+    const lang = this.i18nService.getDefaultLanguage();
+
+    if (!sellerId) {
+      throw new UnauthorizedException(
+        this.i18nService.translate('errors.seller_auth_required', lang),
+      );
+    }
+
+    const skip = (page - 1) * pageSize;
+    const where = {
+      sellerId,
+      storeProduct: { isActive: true, deletedAt: null },
+    };
+
+    const [likes, totalCount] = await Promise.all([
+      this.prisma.storeProductLike.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        include: { storeProduct: { include: { storeSubCategory: true } } },
+      }),
+      this.prisma.storeProductLike.count({ where }),
+    ]);
+
+    const products = likes.map((like) => like.storeProduct);
+    return this.createPaginatedResponse(products, totalCount, page, pageSize);
+  }
+
+  /**
    * Build Prisma orderBy clause from sort input
    */
   private buildOrderBy(

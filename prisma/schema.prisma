@@ -224,7 +224,7 @@ model StoreProduct {
   featuredUntil DateTime?
 
   productComment     ProductComment[]
-  productLike        ProductLike[]
+  likes              StoreProductLike[]
   productVariant     ProductVariant[]
   storeSubCategory   StoreSubCategory     @relation(fields: [subCategoryId], references: [id])
   storeProductReview StoreProductReview[]
@@ -345,7 +345,7 @@ model ProductComment {
   storeProduct   StoreProduct @relation(fields: [storeProductId], references: [id])
 }
 
-model ProductLike {
+model StoreProductLike {
   id             Int          @id @default(autoincrement())
   sellerId       String
   createdAt      DateTime     @default(now())

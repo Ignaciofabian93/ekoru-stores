@@ -50,7 +50,7 @@ export type StoreProduct = {
   viewCount: number;
   advertisement: Advertisement[];
   productComment: ProductComment[];
-  productLike: ProductLike[];
+  likes: StoreProductLike[];
   productVariant: ProductVariant[];
   seller: Seller;
   storeSubCategory: StoreSubCategory;
@@ -78,7 +78,7 @@ export type ProductComment = {
   id: number;
 };
 
-export type ProductLike = {
+export type StoreProductLike = {
   id: number;
 };
 

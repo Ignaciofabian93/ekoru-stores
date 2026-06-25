@@ -48,6 +48,9 @@ export interface GraphQLContext {
       string,
       StoreSubCategoryTranslation | null
     >;
+
+    // Whether the current seller has favorited a store product (by id).
+    storeProductLikedByMe: DataLoader<number, boolean>;
   };
 
   sellerId?: string;

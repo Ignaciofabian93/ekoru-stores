@@ -1,3 +1,4 @@
+import DataLoader from 'dataloader';
 import { Request, Response } from 'express';
 import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
@@ -48,6 +49,23 @@ export function createGraphQLContext(
       storeSubCategoryRepository.createTranslationLoader(),
     storeSubCategories:
       storeSubCategoryRepository.createStoreSubCategoryByCategoryLoader(),
+
+    // Batches "did the current seller favorite these store products?" lookups
+    // so grids resolve `isLiked` without an N+1. Anonymous → all false.
+    storeProductLikedByMe: new DataLoader<number, boolean>(
+      async (storeProductIds) => {
+        if (!sellerId) return storeProductIds.map(() => false);
+        const likes = await prisma.storeProductLike.findMany({
+          where: {
+            sellerId,
+            storeProductId: { in: [...storeProductIds] },
+          },
+          select: { storeProductId: true },
+        });
+        const liked = new Set(likes.map((l) => l.storeProductId));
+        return storeProductIds.map((id) => liked.has(id));
+      },
+    ),
   };
 
   return {
