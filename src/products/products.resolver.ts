@@ -249,7 +249,10 @@ export class ProductsResolver {
   }
 
   @ResolveField(() => EnvironmentalImpactEntity, { nullable: true })
-  async environmentalImpact(@Parent() product: ProductEntity) {
+  async environmentalImpact(
+    @Parent() product: ProductEntity,
+    @Context() ctx: GraphQLContext,
+  ) {
     try {
       // For StoreProduct, we calculate impact based on the subcategory's materials
       // We need to get the subCategoryId from the product
@@ -260,7 +263,10 @@ export class ProductsResolver {
         return null;
       }
 
-      return await this.impactService.calculateSubCategoryImpact(subCategoryId);
+      return await this.impactService.calculateSubCategoryImpact(
+        subCategoryId,
+        ctx.language,
+      );
     } catch (error) {
       this.logger.error('Error calculating environmental impact:', error);
       return null;
