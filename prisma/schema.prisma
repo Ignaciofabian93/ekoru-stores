@@ -80,13 +80,13 @@ enum DimensionUnit {
 // ─── Models ──────────────────────────────────────────────────────────────────────
 
 model StoreCategory {
-  id           Int      @id @default(autoincrement())
-  isActive     Boolean  @default(true)
-  sortOrder    Int      @default(0)
-  featuredFrom DateTime?
+  id            Int       @id @default(autoincrement())
+  isActive      Boolean   @default(true)
+  sortOrder     Int       @default(0)
+  featuredFrom  DateTime?
   featuredUntil DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   storeSubCategory StoreSubCategory[]
   translations     StoreCategoryTranslation[]
@@ -120,10 +120,10 @@ model StoreCategoryTranslation {
 }
 
 model StoreSubCategory {
-  id              Int     @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   storeCategoryId Int
-  isActive        Boolean @default(true)
-  sortOrder       Int     @default(0)
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
   featuredFrom    DateTime?
   featuredUntil   DateTime?
 
@@ -217,10 +217,10 @@ model StoreProduct {
 
   subCategoryId Int
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-  featuredFrom DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  featuredFrom  DateTime?
   featuredUntil DateTime?
 
   productComment     ProductComment[]
@@ -269,8 +269,8 @@ model StoreProductMaterial {
 }
 
 model MaterialImpactEstimate {
-  id                      Int    @id @default(autoincrement())
-  materialType            String @unique
+  id                      Int      @id @default(autoincrement())
+  materialType            String   @unique
   estimatedCo2SavingsKG   Float
   estimatedWaterSavingsLT Float
   createdAt               DateTime @default(now())
