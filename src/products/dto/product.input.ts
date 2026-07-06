@@ -9,6 +9,7 @@ import {
   IsNumber,
   Min,
   IsPositive,
+  IsIn,
 } from 'class-validator';
 import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
 
@@ -99,9 +100,12 @@ export class StoreProductSortInput {
   @Field(() => String, {
     description:
       'Field to sort by (e.g., price, createdAt, name, averageRating, saleCount, viewCount)',
+    nullable: true,
+    defaultValue: 'createdAt',
   })
+  @IsOptional()
   @IsString()
-  field: string;
+  field?: string;
 
   @Field(() => String, {
     nullable: true,
@@ -110,6 +114,7 @@ export class StoreProductSortInput {
   })
   @IsOptional()
   @IsString()
+  @IsIn(['asc', 'desc'])
   order?: 'asc' | 'desc';
 }
 
