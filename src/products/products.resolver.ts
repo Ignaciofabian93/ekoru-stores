@@ -17,8 +17,10 @@ import { StoreSubCategoryEntity } from '../catalog-v2/entities';
 import { ProductEntity, SellerEntity } from './entities/product.entity';
 import { ProductConnectionEntity } from './entities/product-connection.entity';
 import { EnvironmentalImpactEntity } from './entities/environmental-impact.entity';
+import { StoreProductMaterialCompositionEntity } from './entities/store-product-material-composition.entity';
 import { ProductsService } from './products.service';
 import { ImpactService } from '../services/impact.service';
+import { MaterialService } from '../services/material.service';
 import {
   StoreProductFilterInput,
   StoreProductSortInput,
@@ -33,6 +35,7 @@ export class ProductsResolver {
   constructor(
     private readonly productsService: ProductsService,
     private readonly impactService: ImpactService,
+    private readonly materialService: MaterialService,
   ) {}
 
   @Query(() => ProductEntity, { nullable: true, name: 'getStoreProductById' })
@@ -259,6 +262,16 @@ export class ProductsResolver {
     }
     // Return a reference for Apollo Federation
     return { __typename: 'Seller', id: product.sellerId };
+  }
+
+  @ResolveField(() => [StoreProductMaterialCompositionEntity], {
+    description: "The product's declared material composition, localized.",
+  })
+  async materials(
+    @Parent() product: ProductEntity,
+    @Context() ctx: GraphQLContext,
+  ): Promise<StoreProductMaterialCompositionEntity[]> {
+    return this.materialService.getProductComposition(product.id, ctx.language);
   }
 
   @ResolveField(() => EnvironmentalImpactEntity, { nullable: true })

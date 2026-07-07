@@ -47,4 +47,37 @@ export class ImpactRepository {
       },
     });
   }
+
+  /**
+   * List every material type with its impact data, for the composition picker.
+   *
+   * When `language` is provided, translations are filtered to that language so
+   * the caller can resolve a localized label without an extra round-trip.
+   */
+  findAllMaterials(language?: Language) {
+    return this.prisma.materialImpactEstimate.findMany({
+      orderBy: { materialType: 'asc' },
+      include: {
+        translations: language ? { where: { language } } : true,
+      },
+    });
+  }
+
+  /**
+   * Get a store product's declared material composition (material + percentage),
+   * with each material's translations filtered to `language` when provided.
+   */
+  findProductComposition(storeProductId: number, language?: Language) {
+    return this.prisma.storeProductMaterialComposition.findMany({
+      where: { storeProductId },
+      orderBy: { percentage: 'desc' },
+      include: {
+        material: {
+          include: {
+            translations: language ? { where: { language } } : true,
+          },
+        },
+      },
+    });
+  }
 }

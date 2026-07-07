@@ -21,4 +21,10 @@ export class MaterialImpactEstimateEntity {
 
   @Field(() => Float, { description: 'Estimated water savings in liters' })
   estimatedWaterSavingsLT: number;
+
+  @Field(() => String, {
+    description:
+      'Localized display name for the requested language (falls back to a humanized materialType)',
+  })
+  label: string;
 }

@@ -8,10 +8,31 @@ import {
   IsEnum,
   IsNumber,
   Min,
+  Max,
   IsPositive,
   IsIn,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
+
+/**
+ * A single material and the percentage it makes up of a store product. Combined
+ * into the `materials` array on AddStoreProductInput to record a product's
+ * material composition.
+ */
+@InputType('StoreProductMaterialInput')
+export class StoreProductMaterialInput {
+  @Field(() => Int, { description: 'MaterialImpactEstimate id' })
+  @IsInt()
+  materialTypeId: number;
+
+  @Field(() => Float, { description: 'Percentage of the product (0-100)' })
+  @IsNumber()
+  @IsPositive()
+  @Max(100)
+  percentage: number;
+}
 
 /**
  * GraphQL Input for filtering store products
@@ -306,6 +327,16 @@ export class AddStoreProductInput {
   @IsString({ each: true })
   features?: string[];
 
+  @Field(() => [StoreProductMaterialInput], {
+    nullable: true,
+    description: "The product's material composition (material + percentage)",
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StoreProductMaterialInput)
+  materials?: StoreProductMaterialInput[];
+
   @Field(() => Int, { description: 'Store subcategory ID' })
   @IsInt()
   subCategoryId: number;
@@ -494,6 +525,17 @@ export class UpdateStoreProductInput {
   @IsArray()
   @IsString({ each: true })
   features?: string[];
+
+  @Field(() => [StoreProductMaterialInput], {
+    nullable: true,
+    description:
+      "Replace the product's material composition (material + percentage)",
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => StoreProductMaterialInput)
+  materials?: StoreProductMaterialInput[];
 
   @Field(() => Int, { nullable: true, description: 'Store subcategory ID' })
   @IsOptional()

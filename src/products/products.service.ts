@@ -284,11 +284,23 @@ export class ProductsService {
       );
     }
 
+    // `materials` is a nested relation, not a scalar column, so it must be
+    // pulled out of the spread and turned into a nested create.
+    const { materials, ...rest } = input;
+
     const product = await this.prisma.storeProduct.create({
       data: {
-        ...input,
+        ...rest,
         sellerId,
         updatedAt: new Date(),
+        ...(materials?.length && {
+          materialCompositions: {
+            create: materials.map((material) => ({
+              materialTypeId: material.materialTypeId,
+              percentage: material.percentage,
+            })),
+          },
+        }),
       },
       include: {
         storeSubCategory: true,
@@ -336,12 +348,23 @@ export class ProductsService {
       );
     }
 
-    const { id, ...data } = input;
+    // Pull `materials` out of the spread. When present (even as an empty array)
+    // it fully replaces the existing composition; when omitted it is left as-is.
+    const { id, materials, ...data } = input;
     const updatedProduct = await this.prisma.storeProduct.update({
       where: { id },
       data: {
         ...data,
         updatedAt: new Date(),
+        ...(materials && {
+          materialCompositions: {
+            deleteMany: {},
+            create: materials.map((material) => ({
+              materialTypeId: material.materialTypeId,
+              percentage: material.percentage,
+            })),
+          },
+        }),
       },
       include: {
         storeSubCategory: true,

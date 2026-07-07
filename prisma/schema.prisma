@@ -223,11 +223,12 @@ model StoreProduct {
   featuredFrom  DateTime?
   featuredUntil DateTime?
 
-  productComment     ProductComment[]
-  likes              StoreProductLike[]
-  productVariant     ProductVariant[]
-  storeSubCategory   StoreSubCategory     @relation(fields: [subCategoryId], references: [id])
-  storeProductReview StoreProductReview[]
+  productComment      ProductComment[]
+  likes               StoreProductLike[]
+  productVariant      ProductVariant[]
+  materialCompositions StoreProductMaterialComposition[]
+  storeSubCategory    StoreSubCategory                  @relation(fields: [subCategoryId], references: [id])
+  storeProductReview  StoreProductReview[]
 
   @@index([sellerId])
   @@index([subCategoryId])
@@ -268,6 +269,22 @@ model StoreProductMaterial {
   @@index([isPrimary])
 }
 
+model StoreProductMaterialComposition {
+  id             Int      @id @default(autoincrement())
+  storeProductId Int
+  materialTypeId Int
+  percentage     Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  storeProduct StoreProduct           @relation(fields: [storeProductId], references: [id], onDelete: Cascade)
+  material     MaterialImpactEstimate @relation(fields: [materialTypeId], references: [id])
+
+  @@unique([storeProductId, materialTypeId])
+  @@index([storeProductId])
+  @@index([materialTypeId])
+}
+
 model MaterialImpactEstimate {
   id                      Int      @id @default(autoincrement())
   materialType            String   @unique
@@ -276,8 +293,9 @@ model MaterialImpactEstimate {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
-  storeProductMaterials    StoreProductMaterial[]
-  translations             MaterialImpactEstimateTranslation[]
+  storeProductMaterials     StoreProductMaterial[]
+  storeProductCompositions  StoreProductMaterialComposition[]
+  translations              MaterialImpactEstimateTranslation[]
 
   @@index([materialType])
 }
