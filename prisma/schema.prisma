@@ -210,7 +210,7 @@ model StoreProduct {
   metaDescription String?
 
   // Additional Info
-  warranty         String?
+  warranty         Boolean?
   warrantyDuration Int?
   features         String[]
 

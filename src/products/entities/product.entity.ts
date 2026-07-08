@@ -1,11 +1,4 @@
-import {
-  ObjectType,
-  Field,
-  Int,
-  Float,
-  ID,
-  Directive,
-} from '@nestjs/graphql';
+import { ObjectType, Field, Int, Float, ID, Directive } from '@nestjs/graphql';
 import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
 import { EnvironmentalImpactEntity } from './environmental-impact.entity';
 import { StoreSubCategoryEntity } from '../../catalog-v2/entities';
@@ -159,7 +152,7 @@ export class ProductEntity {
     nullable: true,
     description: 'Warranty information',
   })
-  warranty?: string;
+  warranty?: boolean;
 
   @Field(() => Int, {
     nullable: true,

@@ -306,7 +306,7 @@ export class AddStoreProductInput {
   @Field(() => String, { nullable: true, description: 'Warranty information' })
   @IsOptional()
   @IsString()
-  warranty?: string;
+  warranty?: boolean;
 
   @Field(() => Int, {
     nullable: true,
@@ -506,7 +506,7 @@ export class UpdateStoreProductInput {
   @Field(() => String, { nullable: true, description: 'Warranty information' })
   @IsOptional()
   @IsString()
-  warranty?: string;
+  warranty?: boolean;
 
   @Field(() => Int, {
     nullable: true,
