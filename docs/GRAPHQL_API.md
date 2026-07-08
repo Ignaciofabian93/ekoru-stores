@@ -614,7 +614,7 @@ input AddStoreProductInput {
   tags: [String!]
   metaTitle: String
   metaDescription: String
-  warranty: String
+  warranty: Boolean
   warrantyDuration: Int
   features: [String!]
   subCategoryId: Int!
@@ -651,7 +651,7 @@ input UpdateStoreProductInput {
   tags: [String!]
   metaTitle: String
   metaDescription: String
-  warranty: String
+  warranty: Boolean
   warrantyDuration: Int
   features: [String!]
   subCategoryId: Int

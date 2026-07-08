@@ -148,9 +148,9 @@ export class ProductEntity {
   metaDescription?: string;
 
   // Additional Info
-  @Field(() => String, {
+  @Field(() => Boolean, {
     nullable: true,
-    description: 'Warranty information',
+    description: 'Whether the product includes a warranty',
   })
   warranty?: boolean;
 
