@@ -1,5 +1,4 @@
 import { Language, ProductSize, WeightUnit } from '@prisma/client';
-import { MaterialImpactEstimate } from './impact';
 
 export type StoreSubCategory = {
   id: number;
@@ -13,19 +12,6 @@ export type StoreSubCategory = {
   weightUnit: WeightUnit | null;
   createdAt: Date;
   updatedAt: Date;
-};
-
-export type StoreProductMaterial = {
-  id: number;
-  storeSubCategoryId: number;
-  materialTypeId: number;
-  quantity: number;
-  unit: string;
-  isPrimary: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  material: MaterialImpactEstimate;
-  storeSubCategory: StoreSubCategory;
 };
 
 export type StoreSubCategoryTranslation = {

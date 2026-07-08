@@ -1,5 +1,4 @@
 import { ProductCategoryMaterial } from './product';
-import { StoreProductMaterial } from './store-sub-category';
 
 export type WaterImpactMessage = {
   id: number;
@@ -25,5 +24,4 @@ export type MaterialImpactEstimate = {
   estimatedCo2SavingsKG: number;
   estimatedWaterSavingsLT: number;
   productCategoryMaterials: ProductCategoryMaterial[];
-  storeProductMaterials: StoreProductMaterial[];
 };

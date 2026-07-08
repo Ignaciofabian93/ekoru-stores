@@ -280,17 +280,11 @@ export class ProductsResolver {
     @Context() ctx: GraphQLContext,
   ) {
     try {
-      // For StoreProduct, we calculate impact based on the subcategory's materials
-      // We need to get the subCategoryId from the product
-      // If storeSubCategory is loaded, use its id, otherwise the product should have subCategoryId
-      const subCategoryId = product.storeSubCategory?.id;
-
-      if (!subCategoryId) {
-        return null;
-      }
-
-      return await this.impactService.calculateSubCategoryImpact(
-        subCategoryId,
+      // Impact is derived from the product's own declared material composition
+      // (StoreProductMaterialComposition), since two sellers can list the same
+      // kind of product with different materials.
+      return await this.impactService.calculateProductImpact(
+        product.id,
         ctx.language,
       );
     } catch (error) {

@@ -1,8 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import type { Language } from '@prisma/client';
 import { ImpactRepository } from '../repositories/impact.repository';
 import { MaterialImpactEstimateEntity } from '../catalog-v2/entities';
 import { StoreProductMaterialCompositionEntity } from '../products/entities/store-product-material-composition.entity';
+import { AddMaterialInput } from '../products/dto/material.input';
 
 /**
  * Turns a raw material key like "ELECTRONIC_COMPONENTS" into a render-ready
@@ -44,6 +50,71 @@ export class MaterialService {
         label: translated ?? humanizeMaterialType(material.materialType),
       };
     });
+  }
+
+  /**
+   * Admin-only: register a new material (impact data + localized names) so it
+   * shows up in the composition picker. Sellers request new materials from us;
+   * an admin adds them here instead of hand-writing SQL.
+   */
+  async addMaterial({
+    input,
+    adminId,
+    language,
+  }: {
+    input: AddMaterialInput;
+    adminId?: string;
+    language?: Language;
+  }): Promise<MaterialImpactEstimateEntity> {
+    if (!adminId) {
+      throw new ForbiddenException(
+        'Admin privileges are required to add a material.',
+      );
+    }
+
+    // Normalize to the SCREAMING_SNAKE_CASE key convention (e.g. "organic cotton" -> "ORGANIC_COTTON").
+    const materialType = input.materialType
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, '_');
+
+    if (!materialType) {
+      throw new BadRequestException('materialType cannot be empty.');
+    }
+
+    const translations = input.translations ?? [];
+    const languages = translations.map((t) => t.language);
+    if (new Set(languages).size !== languages.length) {
+      throw new BadRequestException(
+        'Duplicate language in translations; provide at most one name per language.',
+      );
+    }
+
+    const existing =
+      await this.impactRepository.findMaterialByType(materialType);
+    if (existing) {
+      throw new ConflictException(`Material "${materialType}" already exists.`);
+    }
+
+    const created = await this.impactRepository.createMaterial({
+      materialType,
+      estimatedCo2SavingsKG: input.estimatedCo2SavingsKG,
+      estimatedWaterSavingsLT: input.estimatedWaterSavingsLT,
+      translations,
+    });
+
+    const translated = language
+      ? created.translations?.find((t) => t.language === language)
+          ?.materialTypeTranslation
+      : undefined;
+
+    return {
+      id: created.id,
+      materialType: created.materialType,
+      estimatedCo2SavingsKG: created.estimatedCo2SavingsKG,
+      estimatedWaterSavingsLT: created.estimatedWaterSavingsLT,
+      label: translated ?? humanizeMaterialType(created.materialType),
+    };
   }
 
   async getProductComposition(

@@ -20,8 +20,9 @@ function humanizeMaterialType(value: string): string {
 /**
  * Impact Service
  *
- * Calculates environmental impact for product categories based on
- * their material composition and impact estimates.
+ * Calculates environmental impact for an individual store product based on the
+ * material composition its seller declared (StoreProductMaterialComposition)
+ * and each material's impact estimate.
  */
 @Injectable()
 export class ImpactService {
@@ -30,27 +31,27 @@ export class ImpactService {
   constructor(private readonly impactRepository: ImpactRepository) {}
 
   /**
-   * Calculate total environmental impact for a store subcategory
+   * Calculate total environmental impact for a store product.
    *
-   * Aggregates CO2 and water savings across all materials in the subcategory
-   * based on their quantities and impact estimates.
+   * Aggregates CO2 and water savings across the product's declared materials,
+   * weighting each material's impact estimate by the percentage it makes up of
+   * the product.
    */
-  async calculateSubCategoryImpact(
-    storeSubCategoryId: number,
+  async calculateProductImpact(
+    storeProductId: number,
     language?: Language,
   ): Promise<EnvironmentalImpactEntity | null> {
     try {
-      // Get all materials for this store subcategory (translations filtered to
-      // `language` when supplied, so we can resolve a localized name below).
-      const categoryMaterials =
-        await this.impactRepository.getStoreProductMaterials(
-          storeSubCategoryId,
-          language,
-        );
+      // The product's declared composition (translations filtered to `language`
+      // when supplied, so we can resolve a localized name below).
+      const composition = await this.impactRepository.findProductComposition(
+        storeProductId,
+        language,
+      );
 
-      if (!categoryMaterials || categoryMaterials.length === 0) {
+      if (!composition || composition.length === 0) {
         this.logger.debug(
-          `No materials found for subcategory ${storeSubCategoryId}`,
+          `No material composition found for product ${storeProductId}`,
         );
         return null;
       }
@@ -59,22 +60,17 @@ export class ImpactService {
       let totalWaterSavingsLT = 0;
       const materialBreakdown: MaterialBreakdown[] = [];
 
-      // Calculate impact for each material
-      for (const categoryMaterial of categoryMaterials) {
-        if (!categoryMaterial.material) {
-          this.logger.warn(
-            `Material ${categoryMaterial.materialTypeId} has no impact data`,
-          );
+      // Calculate impact for each declared material
+      for (const row of composition) {
+        if (!row.material) {
+          this.logger.warn(`Material ${row.materialTypeId} has no impact data`);
           continue;
         }
 
-        const material = categoryMaterial.material;
-        const quantity = categoryMaterial.quantity;
+        const material = row.material;
 
-        // Calculate impact based on quantity
-        // Assuming the estimates are per unit (e.g., per kg or per 100%)
-        const multiplier =
-          categoryMaterial.unit === 'percentage' ? quantity / 100 : quantity;
+        // Composition percentages are 0-100, so weight the per-unit estimate.
+        const multiplier = row.percentage / 100;
 
         const co2Savings = material.estimatedCo2SavingsKG * multiplier;
         const waterSavings = material.estimatedWaterSavingsLT * multiplier;
@@ -84,16 +80,8 @@ export class ImpactService {
 
         // Prefer the localized name for the request language; fall back to a
         // humanized form of the raw key so the FE never renders "PLASTIC".
-        const translations = (
-          material as {
-            translations?: {
-              language: Language;
-              materialTypeTranslation: string;
-            }[];
-          }
-        ).translations;
         const translated = language
-          ? translations?.find((t) => t.language === language)
+          ? material.translations?.find((t) => t.language === language)
               ?.materialTypeTranslation
           : undefined;
 
@@ -101,8 +89,8 @@ export class ImpactService {
           materialType: material.materialType,
           materialTypeLabel:
             translated ?? humanizeMaterialType(material.materialType),
-          quantity: categoryMaterial.quantity,
-          unit: categoryMaterial.unit,
+          quantity: row.percentage,
+          unit: 'percentage',
           co2SavingsKG: co2Savings,
           waterSavingsLT: waterSavings,
         });
@@ -115,7 +103,7 @@ export class ImpactService {
       };
     } catch (error) {
       this.logger.error(
-        `Error calculating impact for subcategory ${storeSubCategoryId}:`,
+        `Error calculating impact for product ${storeProductId}:`,
         error,
       );
       return null;

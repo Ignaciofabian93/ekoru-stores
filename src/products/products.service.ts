@@ -76,6 +76,7 @@ export class ProductsService {
         take: pageSize,
         include: {
           storeSubCategory: true,
+          materialCompositions: true,
         },
       }),
       this.prisma.storeProduct.count({ where }),

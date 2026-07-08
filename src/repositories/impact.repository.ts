@@ -6,45 +6,49 @@ import { PrismaService } from '../prisma/prisma.service';
  * Impact Repository
  *
  * Handles data access for environmental impact calculations.
- * Fetches product category materials and their impact estimates.
+ * Fetches a product's declared material composition and impact estimates.
  */
 @Injectable()
 export class ImpactRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Get all materials and their impact data for a store sub category.
-   *
-   * When `language` is provided, each material's translations are filtered to
-   * that language so the caller can resolve a localized material name without
-   * an extra round-trip.
-   */
-  async getStoreProductMaterials(
-    storeSubCategoryId: number,
-    language?: Language,
-  ) {
-    return this.prisma.storeProductMaterial.findMany({
-      where: {
-        storeSubCategoryId,
-      },
-      include: {
-        material: {
-          include: {
-            translations: language ? { where: { language } } : true,
-          },
-        },
-      },
+  /** Look up a material by its unique type key (e.g. "COTTON"). */
+  findMaterialByType(materialType: string) {
+    return this.prisma.materialImpactEstimate.findUnique({
+      where: { materialType },
     });
   }
 
   /**
-   * Get material impact estimate by ID
+   * Create a new material (with impact data) and its localized names in one
+   * transaction. Returns the material with its translations included.
    */
-  getMaterialImpactById(materialTypeId: number) {
-    return this.prisma.materialImpactEstimate.findUnique({
-      where: {
-        id: materialTypeId,
+  createMaterial({
+    materialType,
+    estimatedCo2SavingsKG,
+    estimatedWaterSavingsLT,
+    translations,
+  }: {
+    materialType: string;
+    estimatedCo2SavingsKG: number;
+    estimatedWaterSavingsLT: number;
+    translations?: { language: Language; materialTypeTranslation: string }[];
+  }) {
+    return this.prisma.materialImpactEstimate.create({
+      data: {
+        materialType,
+        estimatedCo2SavingsKG,
+        estimatedWaterSavingsLT,
+        ...(translations?.length && {
+          translations: {
+            create: translations.map((t) => ({
+              language: t.language,
+              materialTypeTranslation: t.materialTypeTranslation,
+            })),
+          },
+        }),
       },
+      include: { translations: true },
     });
   }
 
