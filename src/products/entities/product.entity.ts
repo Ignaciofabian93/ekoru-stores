@@ -1,7 +1,7 @@
 import { ObjectType, Field, Int, Float, ID, Directive } from '@nestjs/graphql';
 import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
 import { EnvironmentalImpactEntity } from './environmental-impact.entity';
-import { StoreSubCategoryEntity } from '../../catalog-v2/entities';
+import { StoreSubCategoryEntity } from '../../storeSubCategories/entities';
 
 /**
  * GraphQL Seller Entity Reference

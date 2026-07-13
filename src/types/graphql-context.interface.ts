@@ -7,9 +7,9 @@ import {
   StoreSubCategory,
   StoreSubCategoryTranslation,
 } from './store-sub-category';
-import { StoreCategoryService } from '../services/store-category.service';
-import { StoreCategoryRepository } from '../repositories/store-category.repository';
-import { StoreSubCategoryRepository } from '../repositories/store-sub-category.repository';
+import { StoreCategoryService } from '../storeCategories/store-category.service';
+import { StoreCategoryRepository } from '../storeCategories/store-category.repository';
+import { StoreSubCategoryRepository } from '../storeSubCategories/store-sub-category.repository';
 
 /**
  * GraphQL Context Interface

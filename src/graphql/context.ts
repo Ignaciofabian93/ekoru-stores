@@ -4,9 +4,9 @@ import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { I18nService } from '../common/i18n';
 import { GraphQLContext } from '../types';
-import { StoreCategoryRepository } from '../repositories/store-category.repository';
-import { StoreCategoryService } from '../services/store-category.service';
-import { StoreSubCategoryRepository } from '../repositories/store-sub-category.repository';
+import { StoreCategoryRepository } from '../storeCategories/store-category.repository';
+import { StoreCategoryService } from '../storeCategories/store-category.service';
+import { StoreSubCategoryRepository } from '../storeSubCategories/store-sub-category.repository';
 
 /**
  * GraphQL Context Factory

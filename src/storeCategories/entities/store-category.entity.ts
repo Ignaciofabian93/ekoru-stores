@@ -1,7 +1,13 @@
 import { ObjectType, Field, Int, Directive } from '@nestjs/graphql';
 import { StoreCategoryTranslationEntity } from './store-category-translation.entity';
-import { StoreSubCategoryEntity } from './store-sub-category.entity';
+import { StoreSubCategoryEntity } from '../../storeSubCategories/entities';
 
+/**
+ * GraphQL StoreCategory Entity
+ *
+ * This is the code-first GraphQL type definition for StoreCategory.
+ * It corresponds to the StoreCategory model in Prisma schema.
+ */
 @ObjectType('StoreCategory')
 @Directive('@key(fields: "id")')
 export class StoreCategoryEntity {
@@ -25,5 +31,5 @@ export class StoreCategoryEntity {
   @Field(() => [StoreSubCategoryEntity], {
     description: 'List of sub-categories under this store category',
   })
-  storeSubCategory?: StoreSubCategoryEntity[];
+  storeSubCategory: StoreSubCategoryEntity[];
 }
