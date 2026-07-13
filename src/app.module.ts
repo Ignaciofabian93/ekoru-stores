@@ -14,6 +14,8 @@ import { JSONScalar } from './graphql/scalars';
 import { HealthController } from './health/health.controller';
 import configuration from './config/configuration';
 import { CatalogV2Module } from './catalog-v2/catalog-v2.module';
+import { StoreCategoriesModule } from './storeCategories';
+import { StoreSubCategoriesModule } from './storeSubCategories';
 import { createContextFactory } from './graphql/context';
 import { ProductsModule } from './products/products.module';
 
@@ -66,8 +68,14 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     // Database
     PrismaModule,
 
-    // DataLoader-based catalog with multi-language support
+    // Store catalog (web menu) queries only
     CatalogV2Module,
+
+    // Store categories subdomain
+    StoreCategoriesModule,
+
+    // Store sub categories subdomain
+    StoreSubCategoriesModule,
 
     // Products Module
     ProductsModule,

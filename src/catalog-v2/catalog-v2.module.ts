@@ -1,66 +1,31 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
-
-// Repositories
 import { CatalogRepository } from '../repositories/catalog.repository';
-import { StoreCategoryRepository } from '../repositories/store-category.repository';
-import { StoreSubCategoryRepository } from '../repositories/store-sub-category.repository';
-
-// Services
-import { I18nService } from '../common/i18n';
 import { CatalogService } from '../services/catalog.service';
-import { StoreCategoryService } from '../services/store-category.service';
-import { StoreSubCategoryService } from '../services/store-sub-category.service';
-
-// Resolvers
 import { CatalogResolver } from '../resolvers/catalog.resolver';
-import { StoreCategoryResolver } from '../resolvers/store-category.resolver';
-import { StoreSubCategoryResolver } from '../resolvers/store-sub-category.resolver';
+import { I18nService } from '../common/i18n';
 
 /**
- * Catalog V2 Module - DataLoader-based multi-language catalog
+ * Catalog Module - Store catalog (web menu) queries only
  *
- * This module implements a professional DataLoader-based architecture for the
- * marketplace catalog with full multi-language support. It includes:
+ * This module is concerned exclusively with catalog queries such as
+ * getStoreCatalog, which returns the list of store categories with nested
+ * sub categories used by the web menu.
  *
- * - Repository layer with DataLoader pattern for N+1 prevention
- * - Service layer with business logic
- * - GraphQL resolvers with field-level resolution
- * - I18N service for language context management
- *
- * Performance characteristics:
- * - Maximum 3-4 database queries for full nested structure
- * - No N+1 query problems
- * - Response time < 100ms
+ * Store category and store sub category queries live in their own subdomain
+ * modules (StoreCategoriesModule, StoreSubCategoriesModule).
  */
 @Module({
   imports: [PrismaModule],
   providers: [
-    // Services
+    // I18N (also used by the GraphQL context factory to parse Accept-Language)
     I18nService,
+
+    // Catalog
     CatalogService,
-    StoreCategoryService,
-    StoreSubCategoryService,
-
-    // Repositories
     CatalogRepository,
-    StoreCategoryRepository,
-    StoreSubCategoryRepository,
-
-    // Resolvers
     CatalogResolver,
-    StoreCategoryResolver,
-    StoreSubCategoryResolver,
   ],
-  exports: [
-    // Export services and repositories for use in other modules
-    I18nService,
-    CatalogRepository,
-    CatalogService,
-    StoreCategoryRepository,
-    StoreCategoryService,
-    StoreSubCategoryRepository,
-    StoreSubCategoryService,
-  ],
+  exports: [I18nService, CatalogService, CatalogRepository],
 })
 export class CatalogV2Module {}

@@ -1,1 +1,2 @@
-export { StoreCategoryRepository } from './store-category.repository';
+export { CatalogRepository } from './catalog.repository';
+export { ImpactRepository } from './impact.repository';

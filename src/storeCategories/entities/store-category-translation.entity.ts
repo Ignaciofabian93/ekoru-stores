@@ -1,12 +1,9 @@
-import { ObjectType, Field, Int, registerEnumType } from '@nestjs/graphql';
+import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Language } from '../../graphql/enums';
 
-// Register the Language enum for GraphQL
-registerEnumType(Language, {
-  name: 'Language',
-  description: 'Supported languages',
-});
-
+/**
+ * GraphQL StoreCategoryTranslation Entity
+ */
 @ObjectType('StoreCategoryTranslation')
 export class StoreCategoryTranslationEntity {
   @Field(() => Int)

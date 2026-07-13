@@ -1,26 +1,12 @@
-import {
-  ObjectType,
-  Field,
-  Int,
-  Float,
-  registerEnumType,
-} from '@nestjs/graphql';
+import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
 import { ProductSize, WeightUnit } from '@prisma/client';
 import { StoreSubCategoryTranslationEntity } from './store-sub-category-translation.entity';
 
-// Register enums for GraphQL
-registerEnumType(ProductSize, {
-  name: 'ProductSize',
-  description: 'Product size categories',
-});
-
-registerEnumType(WeightUnit, {
-  name: 'WeightUnit',
-  description: 'Weight measurement units',
-});
-
 /**
  * GraphQL StoreSubCategory Entity
+ *
+ * This is the code-first GraphQL type definition for StoreSubCategory.
+ * It corresponds to the StoreSubCategory model in Prisma schema.
  */
 @ObjectType('StoreSubCategory')
 export class StoreSubCategoryEntity {
