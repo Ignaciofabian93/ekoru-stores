@@ -31,7 +31,16 @@ export class ProductsService {
     const product = await this.prisma.storeProduct.findUnique({
       where: { id },
       include: {
-        storeSubCategory: true,
+        storeSubCategory: {
+          include: {
+            translations: true,
+            storeCategory: {
+              include: {
+                translations: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -511,20 +520,35 @@ export class ProductsService {
       );
     }
 
-    const existing = await this.prisma.storeProductLike.findUnique({
-      where: { storeProductId_sellerId: { storeProductId, sellerId } },
-      select: { id: true },
-    });
-
-    if (existing) {
-      await this.prisma.storeProductLike.delete({ where: { id: existing.id } });
-    } else {
-      await this.prisma.storeProductLike.create({
-        data: { storeProductId, sellerId },
+    // Toggle the like row and keep the denormalized `likesCount` counter in
+    // sync. The count is recomputed from the like rows (not blindly ±1) so it
+    // self-heals from any prior drift. Runs in a transaction so a row and its
+    // count never diverge, and returns the updated product so the mutation's
+    // `likesCount` is fresh (`isLiked` re-resolves per request via its loader).
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.storeProductLike.findUnique({
+        where: { storeProductId_sellerId: { storeProductId, sellerId } },
+        select: { id: true },
       });
-    }
 
-    return product;
+      if (existing) {
+        await tx.storeProductLike.delete({ where: { id: existing.id } });
+      } else {
+        await tx.storeProductLike.create({
+          data: { storeProductId, sellerId },
+        });
+      }
+
+      const likesCount = await tx.storeProductLike.count({
+        where: { storeProductId },
+      });
+
+      return tx.storeProduct.update({
+        where: { id: storeProductId },
+        data: { likesCount },
+        include: { storeSubCategory: true },
+      });
+    });
   }
 
   /**

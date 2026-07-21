@@ -1,6 +1,7 @@
 import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
 import { ProductSize, WeightUnit } from '@prisma/client';
 import { StoreSubCategoryTranslationEntity } from './store-sub-category-translation.entity';
+import { StoreCategoryEntity } from '../../storeCategories';
 
 /**
  * GraphQL StoreSubCategory Entity
@@ -39,4 +40,7 @@ export class StoreSubCategoryEntity {
 
   @Field(() => StoreSubCategoryTranslationEntity, { nullable: true })
   translation?: StoreSubCategoryTranslationEntity;
+
+  @Field(() => StoreCategoryEntity, { nullable: true })
+  storeCategory?: StoreCategoryEntity;
 }
