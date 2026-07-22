@@ -19,6 +19,20 @@ import {
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
+  /**
+   * Store-product columns that clients may sort by. Values must match the
+   * Prisma column names exactly (camelCase); anything else is rejected by
+   * buildOrderBy and falls back to newest-first.
+   */
+  private static readonly SORTABLE_FIELDS = [
+    'createdAt',
+    'price',
+    'name',
+    'averageRating',
+    'saleCount',
+    'viewCount',
+  ] as const;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly i18nService: I18nService,
@@ -599,12 +613,19 @@ export class ProductsService {
   private buildOrderBy(
     sort?: StoreProductSortInput,
   ): Prisma.StoreProductOrderByWithRelationInput {
-    if (!sort || !sort.field) {
+    const order: Prisma.SortOrder = sort?.order === 'asc' ? 'asc' : 'desc';
+
+    // Allowlist of sortable columns. The field must match the Prisma column
+    // name exactly (camelCase) — never lower-cased, or camelCase columns like
+    // `createdAt` become an invalid `createdat` argument. Unknown/omitted
+    // fields fall back to newest-first.
+    const field = ProductsService.SORTABLE_FIELDS.find(
+      (f) => f === sort?.field,
+    );
+
+    if (!field) {
       return { createdAt: 'desc' };
     }
-
-    const field = sort.field.toLowerCase();
-    const order = sort.order?.toLowerCase() || 'desc';
 
     return { [field]: order } as Prisma.StoreProductOrderByWithRelationInput;
   }

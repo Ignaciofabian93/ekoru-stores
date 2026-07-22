@@ -17,6 +17,7 @@ import { CatalogV2Module } from './catalog-v2/catalog-v2.module';
 import { StoreCategoriesModule } from './storeCategories';
 import { StoreSubCategoriesModule } from './storeSubCategories';
 import { AdminCatalogModule } from './adminCatalog';
+import { AdminStoreProductModule } from './adminStoreProducts';
 import { createContextFactory } from './graphql/context';
 import { ProductsModule } from './products/products.module';
 
@@ -83,6 +84,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
     // Platform-admin CRUD over store catalog tables (raw reads, bulk upserts, deletes)
     AdminCatalogModule,
+    AdminStoreProductModule,
   ],
   providers: [JSONScalar, { provide: APP_GUARD, useClass: GqlThrottlerGuard }],
   controllers: [HealthController],
