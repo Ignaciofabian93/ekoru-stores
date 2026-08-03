@@ -10,7 +10,12 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { Badge, WeightUnit, DimensionUnit } from '../../graphql/enums';
+import {
+  Badge,
+  WeightUnit,
+  DimensionUnit,
+  ProductSize,
+} from '../../graphql/enums';
 
 /**
  * Admin store-product inputs.
@@ -243,4 +248,84 @@ export class StoreProductUpsertRowInput {
   @Field(() => Date, { nullable: true })
   @IsOptional()
   featuredUntil?: Date | null;
+}
+
+// ─── Store product materials & variants ───────────────────────────────────────
+
+@InputType()
+export class StoreProductMaterialUpsertRowInput {
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  id?: number;
+
+  @Field(() => Int, {
+    nullable: true,
+    description: 'Owner store product. Required when creating (no id).',
+  })
+  @IsOptional()
+  @IsInt()
+  storeProductId?: number;
+
+  @Field(() => Int, {
+    nullable: true,
+    description: 'MaterialImpactEstimate id. Required when creating (no id).',
+  })
+  @IsOptional()
+  @IsInt()
+  materialTypeId?: number;
+
+  @Field(() => Float, {
+    nullable: true,
+    description: 'Required when creating.',
+  })
+  @IsOptional()
+  @IsNumber()
+  percentage?: number;
+}
+
+@InputType()
+export class ProductVariantUpsertRowInput {
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  id?: number;
+
+  @Field(() => Int, {
+    nullable: true,
+    description: 'Owner store product. Required when creating (no id).',
+  })
+  @IsOptional()
+  @IsInt()
+  storeProductId?: number;
+
+  @Field(() => String, {
+    nullable: true,
+    description: 'Required when creating.',
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @Field(() => Int, { nullable: true, description: 'Required when creating.' })
+  @IsOptional()
+  @IsInt()
+  price?: number;
+
+  @Field(() => Int, { nullable: true, description: 'Required when creating.' })
+  @IsOptional()
+  @IsInt()
+  stock?: number;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  color?: string | null;
+
+  @Field(() => ProductSize, {
+    nullable: true,
+    description: 'Required when creating.',
+  })
+  @IsOptional()
+  @IsEnum(ProductSize)
+  size?: ProductSize;
 }

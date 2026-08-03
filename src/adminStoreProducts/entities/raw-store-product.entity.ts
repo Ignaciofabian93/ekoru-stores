@@ -1,6 +1,53 @@
 import { ObjectType, Field, Int, Float } from '@nestjs/graphql';
-import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
+import { Badge, WeightUnit, DimensionUnit, ProductSize } from '@prisma/client';
 import { PageInfoEntity } from '../../products/entities/page-info.entity';
+
+/**
+ * A material composition row of a store product (join to MaterialImpactEstimate).
+ * `materialType` is the related material's name, denormalized for display.
+ */
+@ObjectType('RawStoreProductMaterial')
+export class RawStoreProductMaterialEntity {
+  @Field(() => Int)
+  id: number;
+
+  @Field(() => Int)
+  storeProductId: number;
+
+  @Field(() => Int)
+  materialTypeId: number;
+
+  @Field(() => String, { nullable: true })
+  materialType?: string | null;
+
+  @Field(() => Float)
+  percentage: number;
+}
+
+/** A variant of a store product (colour / size with its own price + stock). */
+@ObjectType('RawProductVariant')
+export class RawProductVariantEntity {
+  @Field(() => Int)
+  id: number;
+
+  @Field(() => Int)
+  storeProductId: number;
+
+  @Field(() => String)
+  name: string;
+
+  @Field(() => Int)
+  price: number;
+
+  @Field(() => Int)
+  stock: number;
+
+  @Field(() => String, { nullable: true })
+  color?: string | null;
+
+  @Field(() => ProductSize)
+  size: ProductSize;
+}
 
 /**
  * Raw, admin-only view of a store product.
@@ -147,6 +194,12 @@ export class RawStoreProductEntity {
     description: 'Soft-delete timestamp (null = live). Read-only.',
   })
   deletedAt?: Date | null;
+
+  @Field(() => [RawStoreProductMaterialEntity])
+  materials: RawStoreProductMaterialEntity[];
+
+  @Field(() => [RawProductVariantEntity])
+  variants: RawProductVariantEntity[];
 }
 
 @ObjectType('RawStoreProductConnection')

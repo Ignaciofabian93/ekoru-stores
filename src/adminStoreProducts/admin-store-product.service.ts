@@ -10,7 +10,11 @@ import {
   calculatePrismaParams,
   createPaginatedResponse,
 } from '../common/utils';
-import { StoreProductUpsertRowInput } from './dto';
+import {
+  StoreProductUpsertRowInput,
+  StoreProductMaterialUpsertRowInput,
+  ProductVariantUpsertRowInput,
+} from './dto';
 
 type BulkOutcome = { outcome: 'created' | 'updated'; id: number };
 
@@ -79,10 +83,28 @@ export class AdminStoreProductService {
         orderBy: { id: 'asc' },
         skip,
         take,
+        include: {
+          materialCompositions: {
+            orderBy: { id: 'asc' },
+            include: { material: { select: { materialType: true } } },
+          },
+          productVariant: { orderBy: { id: 'asc' } },
+        },
       }),
     ]);
 
-    return createPaginatedResponse(rows, count, page, pageSize);
+    const nodes = rows.map(
+      ({ materialCompositions, productVariant, ...row }) => ({
+        ...row,
+        materials: materialCompositions.map(({ material, ...m }) => ({
+          ...m,
+          materialType: material?.materialType ?? null,
+        })),
+        variants: productVariant,
+      }),
+    );
+
+    return createPaginatedResponse(nodes, count, page, pageSize);
   }
 
   async bulkUpsertStoreProducts({
@@ -164,6 +186,153 @@ export class AdminStoreProductService {
       // reference the product — the seller's soft delete (deletedAt) is the
       // safe path for those, reachable by setting isActive false via upsert.
       await this.prisma.storeProduct.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      throw this.friendlyError(error);
+    }
+  }
+
+  // ─── Material composition ─────────────────────────────────────────────────────
+
+  async bulkUpsertStoreProductMaterials({
+    adminId,
+    rows,
+  }: {
+    adminId?: string;
+    rows: StoreProductMaterialUpsertRowInput[];
+  }): Promise<BulkResult> {
+    this.requireAdmin(adminId);
+
+    return this.processRows(rows, async (row) => {
+      const data = this.pickDefined({
+        storeProductId: row.storeProductId,
+        materialTypeId: row.materialTypeId,
+        percentage: row.percentage,
+      });
+
+      if (row.id != null) {
+        await this.prisma.storeProductMaterialComposition.update({
+          where: { id: row.id },
+          data,
+        });
+        return { outcome: 'updated', id: row.id };
+      }
+
+      // No id: (storeProductId, materialTypeId) is unique — match on it.
+      if (row.storeProductId != null && row.materialTypeId != null) {
+        const existing =
+          await this.prisma.storeProductMaterialComposition.findUnique({
+            where: {
+              storeProductId_materialTypeId: {
+                storeProductId: row.storeProductId,
+                materialTypeId: row.materialTypeId,
+              },
+            },
+            select: { id: true },
+          });
+        if (existing) {
+          await this.prisma.storeProductMaterialComposition.update({
+            where: { id: existing.id },
+            data,
+          });
+          return { outcome: 'updated', id: existing.id };
+        }
+      }
+
+      this.requireFields(row, [
+        'storeProductId',
+        'materialTypeId',
+        'percentage',
+      ]);
+      const created = await this.prisma.storeProductMaterialComposition.create({
+        data: {
+          storeProductId: row.storeProductId!,
+          materialTypeId: row.materialTypeId!,
+          percentage: row.percentage!,
+        },
+      });
+      return { outcome: 'created', id: created.id };
+    });
+  }
+
+  async deleteStoreProductMaterial({
+    adminId,
+    id,
+  }: {
+    adminId?: string;
+    id: number;
+  }) {
+    this.requireAdmin(adminId);
+    try {
+      await this.prisma.storeProductMaterialComposition.delete({
+        where: { id },
+      });
+      return true;
+    } catch (error) {
+      throw this.friendlyError(error);
+    }
+  }
+
+  // ─── Variants ─────────────────────────────────────────────────────────────────
+
+  async bulkUpsertProductVariants({
+    adminId,
+    rows,
+  }: {
+    adminId?: string;
+    rows: ProductVariantUpsertRowInput[];
+  }): Promise<BulkResult> {
+    this.requireAdmin(adminId);
+
+    return this.processRows(rows, async (row) => {
+      const data = this.pickDefined({
+        storeProductId: row.storeProductId,
+        name: row.name,
+        price: row.price,
+        stock: row.stock,
+        color: row.color,
+        size: row.size,
+      });
+
+      if (row.id != null) {
+        await this.prisma.productVariant.update({
+          where: { id: row.id },
+          data,
+        });
+        return { outcome: 'updated', id: row.id };
+      }
+
+      this.requireFields(row, [
+        'storeProductId',
+        'name',
+        'price',
+        'stock',
+        'size',
+      ]);
+      const created = await this.prisma.productVariant.create({
+        data: {
+          storeProductId: row.storeProductId!,
+          name: row.name!,
+          price: row.price!,
+          stock: row.stock!,
+          color: row.color,
+          size: row.size!,
+        },
+      });
+      return { outcome: 'created', id: created.id };
+    });
+  }
+
+  async deleteProductVariant({
+    adminId,
+    id,
+  }: {
+    adminId?: string;
+    id: number;
+  }) {
+    this.requireAdmin(adminId);
+    try {
+      await this.prisma.productVariant.delete({ where: { id } });
       return true;
     } catch (error) {
       throw this.friendlyError(error);

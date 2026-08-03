@@ -5,7 +5,12 @@ import { CurrentAdmin } from '../../common/decorators';
 // `StoreBulkUpsertResult` ObjectType would collide in the federated schema.
 import { BulkUpsertResultEntity } from '../../adminCatalog/entities';
 import { RawStoreProductConnectionEntity } from '../entities';
-import { RawStoreProductListArgs, StoreProductUpsertRowInput } from '../dto';
+import {
+  RawStoreProductListArgs,
+  StoreProductUpsertRowInput,
+  StoreProductMaterialUpsertRowInput,
+  ProductVariantUpsertRowInput,
+} from '../dto';
 import { AdminStoreProductService } from '../admin-store-product.service';
 
 /**
@@ -84,5 +89,72 @@ export class AdminStoreProductResolver {
   ) {
     this.logger.debug(`Mutation: deleteStoreProduct(${id})`);
     return this.adminStoreProductService.deleteStoreProduct({ adminId, id });
+  }
+
+  // ─── Material composition ─────────────────────────────────────────────────────
+
+  @Mutation(() => BulkUpsertResultEntity, {
+    description:
+      'Bulk create/update store product material links. Rows without id are ' +
+      'matched by (storeProductId, materialTypeId). Admins only.',
+  })
+  async bulkUpsertStoreProductMaterials(
+    @Args('rows', { type: () => [StoreProductMaterialUpsertRowInput] })
+    rows: StoreProductMaterialUpsertRowInput[],
+    @CurrentAdmin() adminId?: string,
+  ) {
+    this.logger.debug(
+      `Mutation: bulkUpsertStoreProductMaterials(${rows.length} rows)`,
+    );
+    return this.adminStoreProductService.bulkUpsertStoreProductMaterials({
+      adminId,
+      rows,
+    });
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'Hard-deletes a store product material link. Admins only.',
+  })
+  async deleteStoreProductMaterial(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentAdmin() adminId?: string,
+  ) {
+    this.logger.debug(`Mutation: deleteStoreProductMaterial(${id})`);
+    return this.adminStoreProductService.deleteStoreProductMaterial({
+      adminId,
+      id,
+    });
+  }
+
+  // ─── Variants ─────────────────────────────────────────────────────────────────
+
+  @Mutation(() => BulkUpsertResultEntity, {
+    description:
+      'Bulk create/update store product variants (rows with id update, without ' +
+      'id create). Admins only.',
+  })
+  async bulkUpsertProductVariants(
+    @Args('rows', { type: () => [ProductVariantUpsertRowInput] })
+    rows: ProductVariantUpsertRowInput[],
+    @CurrentAdmin() adminId?: string,
+  ) {
+    this.logger.debug(
+      `Mutation: bulkUpsertProductVariants(${rows.length} rows)`,
+    );
+    return this.adminStoreProductService.bulkUpsertProductVariants({
+      adminId,
+      rows,
+    });
+  }
+
+  @Mutation(() => Boolean, {
+    description: 'Hard-deletes a store product variant. Admins only.',
+  })
+  async deleteProductVariant(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentAdmin() adminId?: string,
+  ) {
+    this.logger.debug(`Mutation: deleteProductVariant(${id})`);
+    return this.adminStoreProductService.deleteProductVariant({ adminId, id });
   }
 }
