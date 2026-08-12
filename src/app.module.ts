@@ -20,6 +20,7 @@ import { AdminCatalogModule } from './adminCatalog';
 import { AdminStoreProductModule } from './adminStoreProducts';
 import { createContextFactory } from './graphql/context';
 import { ProductsModule } from './products/products.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 // Import to register enums
 import './graphql/enums';
@@ -81,6 +82,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
     // Products Module
     ProductsModule,
+    ReviewsModule,
 
     // Platform-admin CRUD over store catalog tables (raw reads, bulk upserts, deletes)
     AdminCatalogModule,
