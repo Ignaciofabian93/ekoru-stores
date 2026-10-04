@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { Language } from '@prisma/client';
+import type { Language, WeightUnit } from '@prisma/client';
 import { ImpactRepository } from '../repositories/impact.repository';
 import {
   EnvironmentalImpactEntity,
@@ -18,11 +18,32 @@ function humanizeMaterialType(value: string): string {
 }
 
 /**
+ * Conversion factors to normalize a weight into kilograms. Material impact
+ * estimates are stored per kg, so every weight must be in kg before it can
+ * scale them. Same table as the marketplace impact service.
+ */
+const WEIGHT_TO_KG: Record<WeightUnit, number> = {
+  KG: 1,
+  G: 0.001,
+  LB: 0.45359237,
+  OZ: 0.028349523125,
+};
+
+type DeclaredWeight = {
+  weight: number | null;
+  weightUnit: WeightUnit | null;
+  storeSubCategory: {
+    averageWeight: number | null;
+    weightUnit: WeightUnit | null;
+  } | null;
+};
+
+/**
  * Impact Service
  *
  * Calculates environmental impact for an individual store product based on the
- * material composition its seller declared (StoreProductMaterialComposition)
- * and each material's impact estimate.
+ * material composition its seller declared (StoreProductMaterialComposition),
+ * each material's per-kg impact estimate, and the product's weight.
  */
 @Injectable()
 export class ImpactService {
@@ -33,9 +54,10 @@ export class ImpactService {
   /**
    * Calculate total environmental impact for a store product.
    *
-   * Aggregates CO2 and water savings across the product's declared materials,
-   * weighting each material's impact estimate by the percentage it makes up of
-   * the product.
+   * Each material accounts for its percentage of the product's weight, and its
+   * per-kg estimate is scaled by that mass. Returns null when there is nothing
+   * to claim: no composition, or only materials scored at zero (consumables
+   * such as food or cosmetic ingredients).
    */
   async calculateProductImpact(
     storeProductId: number,
@@ -43,11 +65,12 @@ export class ImpactService {
   ): Promise<EnvironmentalImpactEntity | null> {
     try {
       // The product's declared composition (translations filtered to `language`
-      // when supplied, so we can resolve a localized name below).
-      const composition = await this.impactRepository.findProductComposition(
-        storeProductId,
-        language,
-      );
+      // when supplied, so we can resolve a localized name below) plus the
+      // weights used to turn per-kg estimates into per-product figures.
+      const [composition, weights] = await Promise.all([
+        this.impactRepository.findProductComposition(storeProductId, language),
+        this.impactRepository.findProductWeight(storeProductId),
+      ]);
 
       if (!composition || composition.length === 0) {
         this.logger.debug(
@@ -55,6 +78,23 @@ export class ImpactService {
         );
         return null;
       }
+
+      const scored = composition.some(
+        (row) =>
+          (row.material?.estimatedCo2SavingsKG ?? 0) > 0 ||
+          (row.material?.estimatedWaterSavingsLT ?? 0) > 0,
+      );
+      if (!scored) {
+        this.logger.debug(
+          `Product ${storeProductId} only declares unscored materials`,
+        );
+        return null;
+      }
+
+      const productWeightKG = this.resolveProductWeightKG(
+        weights ?? null,
+        storeProductId,
+      );
 
       let totalCo2SavingsKG = 0;
       let totalWaterSavingsLT = 0;
@@ -69,11 +109,13 @@ export class ImpactService {
 
         const material = row.material;
 
-        // Composition percentages are 0-100, so weight the per-unit estimate.
-        const multiplier = row.percentage / 100;
+        // This material's share of the product's mass, in kg. Composition
+        // percentages are 0-100.
+        const materialKG = (row.percentage / 100) * productWeightKG;
 
-        const co2Savings = material.estimatedCo2SavingsKG * multiplier;
-        const waterSavings = material.estimatedWaterSavingsLT * multiplier;
+        // Estimates are per kilogram, so scale them by this material's mass.
+        const co2Savings = material.estimatedCo2SavingsKG * materialKG;
+        const waterSavings = material.estimatedWaterSavingsLT * materialKG;
 
         totalCo2SavingsKG += co2Savings;
         totalWaterSavingsLT += waterSavings;
@@ -108,5 +150,38 @@ export class ImpactService {
       );
       return null;
     }
+  }
+
+  /**
+   * Resolve a product's weight to kilograms: the seller's declared weight
+   * first, then the subcategory's average weight.
+   *
+   * When neither is set (null or <= 0) we fall back to 1kg and warn, so the
+   * product still reports its per-kg estimates instead of collapsing to zero
+   * impact until a weight is set.
+   */
+  private resolveProductWeightKG(
+    weights: DeclaredWeight | null,
+    storeProductId: number,
+  ): number {
+    const candidates = [
+      { value: weights?.weight, unit: weights?.weightUnit },
+      {
+        value: weights?.storeSubCategory?.averageWeight,
+        unit: weights?.storeSubCategory?.weightUnit,
+      },
+    ];
+
+    for (const { value, unit } of candidates) {
+      if (value != null && value > 0) {
+        return value * WEIGHT_TO_KG[unit ?? 'KG'];
+      }
+    }
+
+    this.logger.warn(
+      `Product ${storeProductId} has no weight and its subcategory no ` +
+        `averageWeight; defaulting to 1kg so impact reflects per-kg estimates.`,
+    );
+    return 1;
   }
 }

@@ -12,9 +12,10 @@ import {
   IsPositive,
   IsIn,
   ValidateNested,
+  ArrayNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
+import { Badge, WeightUnit, DimensionUnit, ProductSize } from '@prisma/client';
 
 /**
  * A single material and the percentage it makes up of a store product. Combined
@@ -246,6 +247,15 @@ export class AddStoreProductInput {
   @IsEnum(WeightUnit)
   weightUnit?: WeightUnit;
 
+  @Field(() => ProductSize, {
+    nullable: true,
+    description:
+      "Size class of the product. When omitted, the subcategory's size applies.",
+  })
+  @IsOptional()
+  @IsEnum(ProductSize)
+  size?: ProductSize;
+
   @Field(() => Float, { nullable: true, description: 'Product length' })
   @IsOptional()
   @IsNumber()
@@ -331,14 +341,15 @@ export class AddStoreProductInput {
   features?: string[];
 
   @Field(() => [StoreProductMaterialInput], {
-    nullable: true,
-    description: "The product's material composition (material + percentage)",
+    description:
+      "The product's material composition (material + percentage). Required: " +
+      'at least one material, no repeats, percentages summing to 100.',
   })
-  @IsOptional()
   @IsArray()
+  @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => StoreProductMaterialInput)
-  materials?: StoreProductMaterialInput[];
+  materials: StoreProductMaterialInput[];
 
   @Field(() => Int, { description: 'Store subcategory ID' })
   @IsInt()
@@ -452,6 +463,11 @@ export class UpdateStoreProductInput {
   @IsEnum(WeightUnit)
   weightUnit?: WeightUnit;
 
+  @Field(() => ProductSize, { nullable: true, description: 'Size class' })
+  @IsOptional()
+  @IsEnum(ProductSize)
+  size?: ProductSize;
+
   @Field(() => Float, { nullable: true, description: 'Product length' })
   @IsOptional()
   @IsNumber()
@@ -535,10 +551,12 @@ export class UpdateStoreProductInput {
   @Field(() => [StoreProductMaterialInput], {
     nullable: true,
     description:
-      "Replace the product's material composition (material + percentage)",
+      "Replace the product's material composition (material + percentage). " +
+      'Omit to keep it; when sent it must be complete (it cannot be cleared).',
   })
   @IsOptional()
   @IsArray()
+  @ArrayNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => StoreProductMaterialInput)
   materials?: StoreProductMaterialInput[];

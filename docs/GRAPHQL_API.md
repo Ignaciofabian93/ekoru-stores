@@ -31,6 +31,8 @@ enum Badge {
 
 enum WeightUnit { KG  LB  OZ  G }
 
+enum ProductSize { XS  S  M  L  XL }
+
 enum DimensionUnit { CM  M  IN  FT }
 
 # StoreProductSortInput.field accepts string values:
@@ -488,7 +490,12 @@ mutation AddStoreProduct($input: AddStoreProductInput!) {
     "hasOffer": false,
     "lowStockThreshold": 5,
     "weight": 0.187,
-    "weightUnit": "KG"
+    "weightUnit": "KG",
+    "size": "XS",
+    "materials": [
+      { "materialTypeId": 12, "percentage": 60 },
+      { "materialTypeId": 4, "percentage": 40 }
+    ]
   }
 }
 ```
@@ -586,6 +593,24 @@ input StoreProductSortInput {
 }
 ```
 
+### StoreProductMaterialInput
+
+```graphql
+input StoreProductMaterialInput {
+  materialTypeId: Int!   # MaterialImpactEstimate id
+  percentage: Float!     # 0 < percentage <= 100
+}
+```
+
+A composition must list at least one material, each material once, with
+percentages adding up to 100. `addStoreProduct` requires it; on
+`updateStoreProduct` it is optional, but when sent it replaces the whole
+composition and must be complete (it cannot be cleared).
+
+`weight`/`weightUnit`/`size` are optional: when empty, the subcategory's
+`averageWeight`/`weightUnit`/`size` apply. `environmentalImpact` scales each
+material's per-kg estimate by its share of that weight.
+
 ### AddStoreProductInput
 
 ```graphql
@@ -606,6 +631,7 @@ input AddStoreProductInput {
   recycledContent: Float
   weight: Float
   weightUnit: WeightUnit
+  size: ProductSize
   length: Float
   width: Float
   height: Float
@@ -617,6 +643,7 @@ input AddStoreProductInput {
   warranty: Boolean
   warrantyDuration: Int
   features: [String!]
+  materials: [StoreProductMaterialInput!]!
   subCategoryId: Int!
 }
 ```
@@ -643,6 +670,7 @@ input UpdateStoreProductInput {
   recycledContent: Float
   weight: Float
   weightUnit: WeightUnit
+  size: ProductSize
   length: Float
   width: Float
   height: Float
@@ -654,6 +682,7 @@ input UpdateStoreProductInput {
   warranty: Boolean
   warrantyDuration: Int
   features: [String!]
+  materials: [StoreProductMaterialInput!]
   subCategoryId: Int
 }
 ```

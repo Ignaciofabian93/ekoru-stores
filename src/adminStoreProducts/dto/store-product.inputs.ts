@@ -174,6 +174,11 @@ export class StoreProductUpsertRowInput {
   @IsEnum(WeightUnit)
   weightUnit?: WeightUnit | null;
 
+  @Field(() => ProductSize, { nullable: true })
+  @IsOptional()
+  @IsEnum(ProductSize)
+  size?: ProductSize | null;
+
   @Field(() => Float, { nullable: true })
   @IsOptional()
   @IsNumber()

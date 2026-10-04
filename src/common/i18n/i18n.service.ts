@@ -99,6 +99,40 @@ const TRANSLATIONS: TranslationMap = {
     [Language.PT]: 'Você não tem permissão para modificar este produto',
     [Language.DE]: 'Sie haben keine Berechtigung, dieses Produkt zu ändern',
   },
+  'errors.materials_required': {
+    [Language.ES]: 'Indica al menos un material del que está hecho el producto',
+    [Language.EN]: 'Declare at least one material the product is made of',
+    [Language.FR]: 'Indiquez au moins un matériau dont le produit est composé',
+    [Language.PT]: 'Informe pelo menos um material do qual o produto é feito',
+    [Language.DE]:
+      'Geben Sie mindestens ein Material an, aus dem das Produkt besteht',
+  },
+  'errors.materials_duplicate': {
+    [Language.ES]: 'Cada material puede aparecer solo una vez',
+    [Language.EN]: 'Each material can only appear once',
+    [Language.FR]: "Chaque matériau ne peut apparaître qu'une seule fois",
+    [Language.PT]: 'Cada material só pode aparecer uma vez',
+    [Language.DE]: 'Jedes Material darf nur einmal vorkommen',
+  },
+  'errors.materials_total': {
+    [Language.ES]:
+      'Los porcentajes de los materiales deben sumar 100 (suman {total})',
+    [Language.EN]:
+      'Material percentages must add up to 100 (they add up to {total})',
+    [Language.FR]:
+      'Les pourcentages des matériaux doivent totaliser 100 (total : {total})',
+    [Language.PT]:
+      'As porcentagens dos materiais devem somar 100 (somam {total})',
+    [Language.DE]:
+      'Die Materialanteile müssen zusammen 100 ergeben (aktuell {total})',
+  },
+  'errors.material_not_found': {
+    [Language.ES]: 'Material no encontrado: {ids}',
+    [Language.EN]: 'Material not found: {ids}',
+    [Language.FR]: 'Matériau introuvable : {ids}',
+    [Language.PT]: 'Material não encontrado: {ids}',
+    [Language.DE]: 'Material nicht gefunden: {ids}',
+  },
 };
 
 /**

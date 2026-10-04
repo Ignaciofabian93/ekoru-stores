@@ -68,6 +68,23 @@ export class ImpactRepository {
   }
 
   /**
+   * A store product's own weight plus its subcategory's average weight, which
+   * stands in when the seller did not declare one.
+   */
+  findProductWeight(storeProductId: number) {
+    return this.prisma.storeProduct.findUnique({
+      where: { id: storeProductId },
+      select: {
+        weight: true,
+        weightUnit: true,
+        storeSubCategory: {
+          select: { averageWeight: true, weightUnit: true },
+        },
+      },
+    });
+  }
+
+  /**
    * Get a store product's declared material composition (material + percentage),
    * with each material's translations filtered to `language` when provided.
    */

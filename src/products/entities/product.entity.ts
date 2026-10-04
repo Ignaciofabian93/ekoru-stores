@@ -1,5 +1,5 @@
 import { ObjectType, Field, Int, Float, ID, Directive } from '@nestjs/graphql';
-import { Badge, WeightUnit, DimensionUnit } from '@prisma/client';
+import { Badge, WeightUnit, DimensionUnit, ProductSize } from '@prisma/client';
 import { EnvironmentalImpactEntity } from './environmental-impact.entity';
 import { StoreSubCategoryEntity } from '../../storeSubCategories/entities';
 
@@ -106,6 +106,13 @@ export class ProductEntity {
     description: 'Unit for weight measurement',
   })
   weightUnit?: WeightUnit;
+
+  @Field(() => ProductSize, {
+    nullable: true,
+    description:
+      "Size class declared by the seller (null = the subcategory's size applies)",
+  })
+  size?: ProductSize;
 
   @Field(() => Float, { nullable: true, description: 'Product length' })
   length?: number;

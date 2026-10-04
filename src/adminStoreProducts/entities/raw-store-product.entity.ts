@@ -135,6 +135,9 @@ export class RawStoreProductEntity {
   @Field(() => WeightUnit, { nullable: true })
   weightUnit?: WeightUnit | null;
 
+  @Field(() => ProductSize, { nullable: true })
+  size?: ProductSize | null;
+
   @Field(() => Float, { nullable: true })
   length?: number | null;
 

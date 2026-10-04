@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -13,6 +14,7 @@ import {
   StoreProductSortInput,
   AddStoreProductInput,
   UpdateStoreProductInput,
+  StoreProductMaterialInput,
 } from './dto/product.input';
 
 @Injectable()
@@ -32,6 +34,12 @@ export class ProductsService {
     'saleCount',
     'viewCount',
   ] as const;
+
+  /**
+   * Allowed drift from exactly 100 when summing a composition, so decimal
+   * splits like 33.33 + 33.33 + 33.34 are accepted.
+   */
+  private static readonly COMPOSITION_TOLERANCE = 0.01;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -321,6 +329,11 @@ export class ProductsService {
       );
     }
 
+    // Every store product declares what it is made of: two sellers can list
+    // the same kind of product in different materials, and the impact figures
+    // are computed from this composition.
+    await this.assertValidComposition(input.materials);
+
     // `materials` is a nested relation, not a scalar column, so it must be
     // pulled out of the spread and turned into a nested create.
     const { materials, ...rest } = input;
@@ -330,14 +343,12 @@ export class ProductsService {
         ...rest,
         sellerId,
         updatedAt: new Date(),
-        ...(materials?.length && {
-          materialCompositions: {
-            create: materials.map((material) => ({
-              materialTypeId: material.materialTypeId,
-              percentage: material.percentage,
-            })),
-          },
-        }),
+        materialCompositions: {
+          create: materials.map((material) => ({
+            materialTypeId: material.materialTypeId,
+            percentage: material.percentage,
+          })),
+        },
       },
       include: {
         storeSubCategory: true,
@@ -385,8 +396,12 @@ export class ProductsService {
       );
     }
 
-    // Pull `materials` out of the spread. When present (even as an empty array)
-    // it fully replaces the existing composition; when omitted it is left as-is.
+    // Pull `materials` out of the spread. When present it fully replaces the
+    // existing composition, so it must be complete; when omitted it is left
+    // as-is. It can no longer be cleared: a store product always has one.
+    if (input.materials != null) {
+      await this.assertValidComposition(input.materials);
+    }
     const { id, materials, ...data } = input;
     const updatedProduct = await this.prisma.storeProduct.update({
       where: { id },
@@ -461,6 +476,53 @@ export class ProductsService {
     });
 
     return deletedProduct;
+  }
+
+  /**
+   * A declared composition must describe the whole product: at least one
+   * material, each listed once, percentages adding up to 100, and every
+   * material present in MaterialImpactEstimate (otherwise the insert would
+   * fail on the foreign key with an opaque error).
+   */
+  private async assertValidComposition(
+    materials: StoreProductMaterialInput[] | undefined,
+  ) {
+    const lang = this.i18nService.getDefaultLanguage();
+
+    if (!materials?.length) {
+      throw new BadRequestException(
+        this.i18nService.translate('errors.materials_required', lang),
+      );
+    }
+
+    const ids = materials.map((m) => m.materialTypeId);
+    if (new Set(ids).size !== ids.length) {
+      throw new BadRequestException(
+        this.i18nService.translate('errors.materials_duplicate', lang),
+      );
+    }
+
+    const total = materials.reduce((sum, m) => sum + m.percentage, 0);
+    if (Math.abs(total - 100) > ProductsService.COMPOSITION_TOLERANCE) {
+      throw new BadRequestException(
+        this.i18nService.translate('errors.materials_total', lang, {
+          total: String(Math.round(total * 100) / 100),
+        }),
+      );
+    }
+
+    const found = await this.prisma.materialImpactEstimate.findMany({
+      where: { id: { in: ids } },
+      select: { id: true },
+    });
+    if (found.length !== ids.length) {
+      const known = new Set(found.map((m) => m.id));
+      throw new BadRequestException(
+        this.i18nService.translate('errors.material_not_found', lang, {
+          ids: ids.filter((id) => !known.has(id)).join(', '),
+        }),
+      );
+    }
   }
 
   /**

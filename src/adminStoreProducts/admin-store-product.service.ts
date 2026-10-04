@@ -136,6 +136,7 @@ export class AdminStoreProductService {
         recycledContent: row.recycledContent,
         weight: row.weight,
         weightUnit: row.weightUnit,
+        size: row.size,
         length: row.length,
         width: row.width,
         height: row.height,
