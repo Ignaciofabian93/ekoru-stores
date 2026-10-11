@@ -49,3 +49,17 @@ export class UserError extends GraphQLError {
     });
   }
 }
+
+/**
+ * A signed-in caller who may not do this. FORBIDDEN rather than UNAUTHORIZED,
+ * so the admin panel keeps the session instead of logging the admin out.
+ */
+export class ForbiddenError extends GraphQLError {
+  constructor(message: string) {
+    super(message, {
+      extensions: {
+        code: 'FORBIDDEN',
+      },
+    });
+  }
+}

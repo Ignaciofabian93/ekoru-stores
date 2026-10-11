@@ -78,10 +78,14 @@ export class AdminStoreProductResolver {
     });
   }
 
+  // Named apart from the seller-facing `deleteStoreProduct` (products
+  // resolver): two root fields with one name collapse into one, and this one
+  // won, so the web's "delete my product" failed validation.
   @Mutation(() => Boolean, {
+    name: 'deleteStoreProductByAdmin',
     description:
       'Hard-deletes a store product. Fails while order items or other rows ' +
-      'reference it. Admins only.',
+      'reference it. Platform admins with MANAGE_PRODUCTS.',
   })
   async deleteStoreProduct(
     @Args('id', { type: () => Int }) id: number,

@@ -1,11 +1,12 @@
 import {
   Injectable,
-  ForbiddenException,
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
 import type { Language } from '@prisma/client';
 import { ImpactRepository } from '../repositories/impact.repository';
+import { PrismaService } from '../prisma/prisma.service';
+import { assertAdminCan } from '../common/admin-access';
 import { MaterialImpactEstimateEntity } from '../catalog-v2/entities';
 import { StoreProductMaterialCompositionEntity } from '../products/entities/store-product-material-composition.entity';
 import { AddMaterialInput } from '../products/dto/material.input';
@@ -29,7 +30,10 @@ function humanizeMaterialType(value: string): string {
  */
 @Injectable()
 export class MaterialService {
-  constructor(private readonly impactRepository: ImpactRepository) {}
+  constructor(
+    private readonly impactRepository: ImpactRepository,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async getMaterials(
     language?: Language,
@@ -66,11 +70,9 @@ export class MaterialService {
     adminId?: string;
     language?: Language;
   }): Promise<MaterialImpactEstimateEntity> {
-    if (!adminId) {
-      throw new ForbiddenException(
-        'Admin privileges are required to add a material.',
-      );
-    }
+    // The material list feeds every store product's impact figures; the
+    // panel's material impact screens are MANAGE_SETTINGS (SEC-8).
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_SETTINGS');
 
     // Normalize to the SCREAMING_SNAKE_CASE key convention (e.g. "organic cotton" -> "ORGANIC_COTTON").
     const materialType = input.materialType

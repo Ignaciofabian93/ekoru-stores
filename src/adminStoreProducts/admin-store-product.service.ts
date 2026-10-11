@@ -1,11 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { adminSellerScope, assertAdminCan } from '../common/admin-access';
 import {
   calculatePrismaParams,
   createPaginatedResponse,
@@ -15,6 +11,9 @@ import {
   StoreProductMaterialUpsertRowInput,
   ProductVariantUpsertRowInput,
 } from './dto';
+
+/** Allowed drift from 100% (decimal splits like 33.33 + 33.33 + 33.34). */
+const COMPOSITION_TOLERANCE = 0.01;
 
 type BulkOutcome = { outcome: 'created' | 'updated'; id: number };
 
@@ -61,13 +60,21 @@ export class AdminStoreProductService {
     sellerId?: string;
     deleted?: boolean;
   }) {
-    this.requireAdmin(adminId);
+    const scopedSellerId = await adminSellerScope(
+      this.prisma,
+      adminId,
+      'MANAGE_PRODUCTS',
+    );
     const { skip, take } = calculatePrismaParams(page, pageSize);
 
     const where: Prisma.StoreProductWhereInput = {
       ...(id != null && { id }),
       ...(subCategoryId != null && { subCategoryId }),
-      ...(sellerId && { sellerId }),
+      // A BUSINESS admin (the panel's my-business screen) only ever sees
+      // their own seller's products, whatever seller the request named.
+      ...((scopedSellerId ?? sellerId) && {
+        sellerId: scopedSellerId ?? sellerId,
+      }),
       // deleted omitted → all rows; true → only soft-deleted; false → only live.
       ...(deleted === true && { deletedAt: { not: null } }),
       ...(deleted === false && { deletedAt: null }),
@@ -114,7 +121,7 @@ export class AdminStoreProductService {
     adminId?: string;
     rows: StoreProductUpsertRowInput[];
   }): Promise<BulkResult> {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
 
     return this.processRows(rows, async (row) => {
       const data = this.pickDefined({
@@ -181,7 +188,7 @@ export class AdminStoreProductService {
   }
 
   async deleteStoreProduct({ adminId, id }: { adminId?: string; id: number }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
     try {
       // Hard delete. Fails (P2003) while order items or other rows still
       // reference the product — the seller's soft delete (deletedAt) is the
@@ -202,9 +209,9 @@ export class AdminStoreProductService {
     adminId?: string;
     rows: StoreProductMaterialUpsertRowInput[];
   }): Promise<BulkResult> {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
 
-    return this.processRows(rows, async (row) => {
+    const result = await this.processRows(rows, async (row) => {
       const data = this.pickDefined({
         storeProductId: row.storeProductId,
         materialTypeId: row.materialTypeId,
@@ -254,6 +261,8 @@ export class AdminStoreProductService {
       });
       return { outcome: 'created', id: created.id };
     });
+    await this.reportOffCompositions({ rows, result });
+    return result;
   }
 
   async deleteStoreProductMaterial({
@@ -263,7 +272,7 @@ export class AdminStoreProductService {
     adminId?: string;
     id: number;
   }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
     try {
       await this.prisma.storeProductMaterialComposition.delete({
         where: { id },
@@ -283,7 +292,7 @@ export class AdminStoreProductService {
     adminId?: string;
     rows: ProductVariantUpsertRowInput[];
   }): Promise<BulkResult> {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
 
     return this.processRows(rows, async (row) => {
       const data = this.pickDefined({
@@ -331,7 +340,7 @@ export class AdminStoreProductService {
     adminId?: string;
     id: number;
   }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
     try {
       await this.prisma.productVariant.delete({ where: { id } });
       return true;
@@ -341,12 +350,6 @@ export class AdminStoreProductService {
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
-
-  private requireAdmin(adminId?: string): void {
-    if (!adminId) {
-      throw new UnauthorizedException('Admin authentication required');
-    }
-  }
 
   private requireFields<T extends object>(row: T, fields: (keyof T)[]): void {
     const missing = fields.filter(
@@ -363,6 +366,63 @@ export class AdminStoreProductService {
     return Object.fromEntries(
       Object.entries(obj).filter(([, v]) => v !== undefined),
     ) as T;
+  }
+
+  /**
+   * A store product's materials must add up to 100%, the rule sellers get in
+   * products.service (STO-5). Import rows are written one at a time, so the
+   * check runs on the totals once the import is done: each product the import
+   * touched whose total is off is reported against its last row. The rows stay
+   * written, so the admin fixes the file and imports it again.
+   */
+  private async reportOffCompositions({
+    rows,
+    result,
+  }: {
+    rows: StoreProductMaterialUpsertRowInput[];
+    result: BulkResult;
+  }): Promise<void> {
+    // Rows that name only their own id: find which product they belong to.
+    const onlyId = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => row.storeProductId == null && row.id != null);
+    const productOfRow = new Map<number, number>();
+    if (onlyId.length) {
+      const found = await this.prisma.storeProductMaterialComposition.findMany({
+        where: { id: { in: onlyId.map(({ row }) => row.id!) } },
+        select: { id: true, storeProductId: true },
+      });
+      const byId = new Map(found.map((f) => [f.id, f.storeProductId]));
+      for (const { row, index } of onlyId) {
+        const productId = byId.get(row.id!);
+        if (productId != null) productOfRow.set(index, productId);
+      }
+    }
+    const lastRowOf = new Map<number, number>();
+    rows.forEach((row, index) => {
+      const productId = row.storeProductId ?? productOfRow.get(index);
+      if (productId != null) lastRowOf.set(productId, index);
+    });
+    if (!lastRowOf.size) return;
+
+    const totals = await this.prisma.storeProductMaterialComposition.groupBy({
+      by: ['storeProductId'],
+      where: { storeProductId: { in: [...lastRowOf.keys()] } },
+      _sum: { percentage: true },
+    });
+    const totalOf = new Map(
+      totals.map((t) => [t.storeProductId, t._sum.percentage ?? 0]),
+    );
+    for (const [productId, index] of lastRowOf) {
+      const total = totalOf.get(productId) ?? 0;
+      if (Math.abs(total - 100) > COMPOSITION_TOLERANCE) {
+        result.errors.push({
+          index,
+          id: rows[index].id ?? null,
+          message: `Store product ${productId}: materials add up to ${Math.round(total * 100) / 100}%, not 100%`,
+        });
+      }
+    }
   }
 
   private async processRows<T extends { id?: number | null }>(

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   BadRequestError,
   InternalServerError,
+  NotFoundError,
   UnAuthorizedError,
 } from '../common/exceptions';
 import {
@@ -43,6 +44,59 @@ export class ReviewsService {
       this.logger.error('Error fetching store product reviews:', error);
       throw new InternalServerError('Error al obtener las reseñas');
     }
+  }
+
+  /**
+   * Every store product review, newest first, for moderation (ADM-4).
+   * Filters by product, store (the product's seller), author and rating.
+   */
+  async getReviewsForModeration({
+    page,
+    pageSize,
+    storeProductId,
+    sellerId,
+    userId,
+    rating,
+  }: {
+    page: number;
+    pageSize: number;
+    storeProductId?: number;
+    sellerId?: string;
+    userId?: string;
+    rating?: number;
+  }) {
+    const { skip, take } = calculatePrismaParams(page, pageSize);
+    const where = {
+      ...(storeProductId != null && { storeProductId }),
+      ...(userId && { userId }),
+      ...(rating != null && { rating }),
+      ...(sellerId && { storeProduct: { sellerId } }),
+    };
+    const [totalCount, reviews] = await Promise.all([
+      this.prisma.storeProductReview.count({ where }),
+      this.prisma.storeProductReview.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+    return createPaginatedResponse(reviews, page, pageSize, totalCount);
+  }
+
+  /**
+   * A moderator removes a review (ADM-4) and the product's rating is
+   * recomputed. The resolver checks MODERATE_CONTENT.
+   */
+  async deleteReviewAsModerator(id: number): Promise<boolean> {
+    const review = await this.prisma.storeProductReview.findUnique({
+      where: { id },
+      select: { storeProductId: true },
+    });
+    if (!review) throw new NotFoundError('Reseña no encontrada');
+    await this.prisma.storeProductReview.delete({ where: { id } });
+    await this.recomputeProductRating(review.storeProductId);
+    return true;
   }
 
   /**

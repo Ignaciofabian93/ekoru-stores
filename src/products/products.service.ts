@@ -7,6 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertAdminCan } from '../common/admin-access';
 import { Prisma } from '@prisma/client';
 import { I18nService } from '../common/i18n';
 import {
@@ -47,11 +48,86 @@ export class ProductsService {
   ) {}
 
   /**
+   * Who may publish: an active business EKORU approved whose business type
+   * sells products (RETAIL or MIXED), the web wizard's rule. Seller and
+   * BusinessProfile belong to ekoru-users, so they are read with raw SQL. A
+   * product from anyone else would be hidden anyway (STO-2); this refuses it
+   * up front with a clear message.
+   */
+  private async assertCanPublish(sellerId: string): Promise<void> {
+    const rows = await this.prisma.$queryRaw<
+      {
+        isActive: boolean;
+        approvalStatus: string | null;
+        businessType: string | null;
+      }[]
+    >`SELECT s."isActive",
+             bp."approvalStatus"::text AS "approvalStatus",
+             bp."businessType"::text   AS "businessType"
+        FROM "Seller" s
+        LEFT JOIN "BusinessProfile" bp ON bp."sellerId" = s."id"
+       WHERE s."id" = ${sellerId}
+       LIMIT 1`;
+    const seller = rows[0];
+    if (
+      !seller?.isActive ||
+      seller.approvalStatus !== 'APPROVED' ||
+      !['RETAIL', 'MIXED'].includes(seller.businessType ?? '')
+    ) {
+      throw new ForbiddenException(
+        this.i18nService.translate(
+          'errors.store_publish_forbidden',
+          this.i18nService.getDefaultLanguage(),
+        ),
+      );
+    }
+  }
+
+  /** How long the hidden-seller list is reused before it is read again. */
+  private static readonly HIDDEN_SELLERS_TTL_MS = 30_000;
+  private hiddenSellers?: { at: number; ids: string[] };
+
+  /**
+   * Sellers whose store products must not be shown or sold (STO-2): inactive
+   * accounts (a ban or a deactivation sets `Seller.isActive` false) and
+   * anyone who is not a business EKORU approved. Seller and BusinessProfile
+   * belong to ekoru-users, so this is raw SQL, limited to sellers who have
+   * store products, which keeps the list short.
+   *
+   * Cached for 30 seconds: every listing needs it, and a ban taking half a
+   * minute to reach the catalog is acceptable.
+   */
+  private async hiddenSellerIds(): Promise<string[]> {
+    const now = Date.now();
+    if (
+      this.hiddenSellers &&
+      now - this.hiddenSellers.at < ProductsService.HIDDEN_SELLERS_TTL_MS
+    ) {
+      return this.hiddenSellers.ids;
+    }
+    const rows = await this.prisma.$queryRaw<{ sellerId: string }[]>`
+      SELECT DISTINCT sp."sellerId"
+        FROM "StoreProduct" sp
+        JOIN "Seller" s ON s."id" = sp."sellerId"
+        LEFT JOIN "BusinessProfile" bp ON bp."sellerId" = s."id"
+       WHERE sp."deletedAt" IS NULL
+         AND (s."isActive" = false
+              OR bp."approvalStatus" IS DISTINCT FROM 'APPROVED')`;
+    const ids = rows.map((r) => r.sellerId);
+    this.hiddenSellers = { at: now, ids };
+    return ids;
+  }
+
+  /**
    * Get a single store product by ID
    */
   async getProductById(id: number) {
-    const product = await this.prisma.storeProduct.findUnique({
-      where: { id },
+    const product = await this.prisma.storeProduct.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        sellerId: { notIn: await this.hiddenSellerIds() },
+      },
       include: {
         storeSubCategory: {
           include: {
@@ -87,8 +163,13 @@ export class ProductsService {
    */
   async getProductsByIds(ids: number[]) {
     if (ids.length === 0) return [];
+    // A hidden seller's products come back missing, so checkout refuses them.
     return this.prisma.storeProduct.findMany({
-      where: { id: { in: ids }, deletedAt: null },
+      where: {
+        id: { in: ids },
+        deletedAt: null,
+        sellerId: { notIn: await this.hiddenSellerIds() },
+      },
     });
   }
 
@@ -109,7 +190,11 @@ export class ProductsService {
     excludeSellerId?: string;
   }) {
     const skip = (page - 1) * pageSize;
-    const where = this.buildWhereClause(filter, excludeSellerId);
+    const where = this.buildWhereClause({
+      filter,
+      excludeSellerId,
+      hidden: await this.hiddenSellerIds(),
+    });
     const orderBy = this.buildOrderBy(sort);
 
     const [products, totalCount] = await Promise.all([
@@ -145,9 +230,13 @@ export class ProductsService {
     filter?: StoreProductFilterInput;
     sort?: StoreProductSortInput;
   }) {
+    // A hidden seller's shop page is empty.
+    if ((await this.hiddenSellerIds()).includes(sellerId)) {
+      return this.createPaginatedResponse([], 0, page, pageSize);
+    }
     const skip = (page - 1) * pageSize;
     const where = {
-      ...this.buildWhereClause(filter),
+      ...this.buildWhereClause({ filter }),
       sellerId,
     };
     const orderBy = this.buildOrderBy(sort);
@@ -189,7 +278,11 @@ export class ProductsService {
   }) {
     const skip = (page - 1) * pageSize;
     const where = {
-      ...this.buildWhereClause(filter, excludeSellerId),
+      ...this.buildWhereClause({
+        filter,
+        excludeSellerId,
+        hidden: await this.hiddenSellerIds(),
+      }),
       subCategoryId,
     };
     const orderBy = this.buildOrderBy(sort);
@@ -248,7 +341,11 @@ export class ProductsService {
 
     const skip = (page - 1) * pageSize;
     const where = {
-      ...this.buildWhereClause(filter, excludeSellerId),
+      ...this.buildWhereClause({
+        filter,
+        excludeSellerId,
+        hidden: await this.hiddenSellerIds(),
+      }),
       subCategoryId: {
         in: subCategoryIds,
       },
@@ -289,7 +386,11 @@ export class ProductsService {
   }) {
     const skip = (page - 1) * pageSize;
     const where = {
-      ...this.buildWhereClause(filter, excludeSellerId),
+      ...this.buildWhereClause({
+        filter,
+        excludeSellerId,
+        hidden: await this.hiddenSellerIds(),
+      }),
       hasOffer: true,
     };
     const orderBy = this.buildOrderBy(sort);
@@ -328,6 +429,8 @@ export class ProductsService {
         ),
       );
     }
+
+    await this.assertCanPublish(sellerId);
 
     // Every store product declares what it is made of: two sellers can list
     // the same kind of product in different materials, and the impact figures
@@ -390,10 +493,16 @@ export class ProductsService {
       );
     }
 
-    if (!adminId && product.sellerId !== sellerId) {
-      throw new ForbiddenException(
-        this.i18nService.translate('errors.product_update_forbidden', lang),
-      );
+    if (product.sellerId !== sellerId) {
+      // Not the owner: only a platform admin with MANAGE_PRODUCTS may act on
+      // someone else's product. A bare admin token, a BUSINESS admin's
+      // included, is not enough (SEC-8).
+      if (!adminId) {
+        throw new ForbiddenException(
+          this.i18nService.translate('errors.product_update_forbidden', lang),
+        );
+      }
+      await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
     }
 
     // Pull `materials` out of the spread. When present it fully replaces the
@@ -458,10 +567,16 @@ export class ProductsService {
       );
     }
 
-    if (!adminId && product.sellerId !== sellerId) {
-      throw new ForbiddenException(
-        this.i18nService.translate('errors.product_delete_forbidden', lang),
-      );
+    if (product.sellerId !== sellerId) {
+      // Not the owner: only a platform admin with MANAGE_PRODUCTS may act on
+      // someone else's product. A bare admin token, a BUSINESS admin's
+      // included, is not enough (SEC-8).
+      if (!adminId) {
+        throw new ForbiddenException(
+          this.i18nService.translate('errors.product_delete_forbidden', lang),
+        );
+      }
+      await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
     }
 
     const deletedProduct = await this.prisma.storeProduct.update({
@@ -557,10 +672,16 @@ export class ProductsService {
       );
     }
 
-    if (!adminId && product.sellerId !== sellerId) {
-      throw new ForbiddenException(
-        this.i18nService.translate('errors.product_modify_forbidden', lang),
-      );
+    if (product.sellerId !== sellerId) {
+      // Not the owner: only a platform admin with MANAGE_PRODUCTS may act on
+      // someone else's product. A bare admin token, a BUSINESS admin's
+      // included, is not enough (SEC-8).
+      if (!adminId) {
+        throw new ForbiddenException(
+          this.i18nService.translate('errors.product_modify_forbidden', lang),
+        );
+      }
+      await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
     }
 
     const updatedProduct = await this.prisma.storeProduct.update({
@@ -664,7 +785,11 @@ export class ProductsService {
     const skip = (page - 1) * pageSize;
     const where = {
       sellerId,
-      storeProduct: { isActive: true, deletedAt: null },
+      storeProduct: {
+        isActive: true,
+        deletedAt: null,
+        sellerId: { notIn: await this.hiddenSellerIds() },
+      },
     };
 
     const [likes, totalCount] = await Promise.all([
@@ -739,17 +864,24 @@ export class ProductsService {
    * own store products are hidden from browsing/search results — they remain
    * visible to the seller in their profile via getProductsBySeller.
    */
-  private buildWhereClause(
-    filter?: StoreProductFilterInput,
-    excludeSellerId?: string,
-  ): Prisma.StoreProductWhereInput {
+  private buildWhereClause({
+    filter,
+    excludeSellerId,
+    hidden = [],
+  }: {
+    filter?: StoreProductFilterInput;
+    excludeSellerId?: string;
+    /** Sellers whose products are not shown (`hiddenSellerIds`). */
+    hidden?: string[];
+  }): Prisma.StoreProductWhereInput {
     const where: Prisma.StoreProductWhereInput = {
       isActive: true,
       deletedAt: null,
     };
 
-    if (excludeSellerId) {
-      where.sellerId = { not: excludeSellerId };
+    const notIn = excludeSellerId ? [...hidden, excludeSellerId] : hidden;
+    if (notIn.length) {
+      where.sellerId = { notIn };
     }
 
     if (!filter) {
@@ -763,12 +895,12 @@ export class ProductsService {
       };
     }
 
-    if (filter.minPrice !== undefined) {
-      where.price = { gte: filter.minPrice };
-    }
-
-    if (filter.maxPrice !== undefined) {
-      where.price = { lte: filter.maxPrice };
+    // Both bounds together: assigning `price` twice kept only the maximum.
+    if (filter.minPrice !== undefined || filter.maxPrice !== undefined) {
+      where.price = {
+        ...(filter.minPrice !== undefined && { gte: filter.minPrice }),
+        ...(filter.maxPrice !== undefined && { lte: filter.maxPrice }),
+      };
     }
 
     if (filter.brand) {

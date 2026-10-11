@@ -77,6 +77,16 @@ const TRANSLATIONS: TranslationMap = {
     [Language.PT]: 'Autenticação do vendedor necessária',
     [Language.DE]: 'Verkäufer-Authentifizierung erforderlich',
   },
+  'errors.store_publish_forbidden': {
+    [Language.ES]:
+      'Solo las tiendas aprobadas por EKORU pueden publicar productos',
+    [Language.EN]: 'Only stores approved by EKORU can publish products',
+    [Language.FR]:
+      'Seules les boutiques approuvées par EKORU peuvent publier des produits',
+    [Language.PT]: 'Apenas lojas aprovadas pela EKORU podem publicar produtos',
+    [Language.DE]:
+      'Nur von EKORU freigegebene Shops können Produkte veröffentlichen',
+  },
   'errors.product_update_forbidden': {
     [Language.ES]: 'No tienes permiso para actualizar este producto',
     [Language.EN]: 'You do not have permission to update this product',

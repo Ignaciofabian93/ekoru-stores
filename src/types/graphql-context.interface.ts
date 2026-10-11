@@ -61,6 +61,8 @@ export interface GraphQLContext {
   adminType?: string;
   adminSellerId?: string;
   token?: string;
+  /** `x-internal-secret` of a direct service-to-service call; see common/internal.ts. */
+  internalSecret?: string;
 }
 
 /**

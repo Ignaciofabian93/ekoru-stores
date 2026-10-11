@@ -1,11 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { assertAdminCan } from '../common/admin-access';
 import {
   calculatePrismaParams,
   createPaginatedResponse,
@@ -58,7 +54,7 @@ export class AdminCatalogService {
     pageSize: number;
     search?: string;
   }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
     const { skip, take } = calculatePrismaParams(page, pageSize);
 
     const where: Prisma.StoreCategoryWhereInput = {
@@ -99,7 +95,10 @@ export class AdminCatalogService {
     search?: string;
     storeCategoryId?: number;
   }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, [
+      'MANAGE_CATEGORIES',
+      'MANAGE_PRODUCTS',
+    ]);
     const { skip, take } = calculatePrismaParams(page, pageSize);
 
     const where: Prisma.StoreSubCategoryWhereInput = {
@@ -135,7 +134,7 @@ export class AdminCatalogService {
     adminId?: string;
     rows: StoreCategoryUpsertRowInput[];
   }): Promise<BulkResult> {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
 
     return this.processRows(rows, async (row) => {
       const data = this.pickDefined({
@@ -162,7 +161,7 @@ export class AdminCatalogService {
     adminId?: string;
     rows: StoreCategoryTranslationUpsertRowInput[];
   }): Promise<BulkResult> {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
 
     return this.processRows(rows, async (row) => {
       const data = this.pickDefined({
@@ -228,7 +227,7 @@ export class AdminCatalogService {
     adminId?: string;
     rows: StoreSubCategoryUpsertRowInput[];
   }): Promise<BulkResult> {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
 
     return this.processRows(rows, async (row) => {
       const data = this.pickDefined({
@@ -270,7 +269,7 @@ export class AdminCatalogService {
     adminId?: string;
     rows: StoreSubCategoryTranslationUpsertRowInput[];
   }): Promise<BulkResult> {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
 
     return this.processRows(rows, async (row) => {
       const data = this.pickDefined({
@@ -336,7 +335,7 @@ export class AdminCatalogService {
   // ─── Deletes ────────────────────────────────────────────────────────────────
 
   async deleteStoreCategory({ adminId, id }: { adminId?: string; id: number }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
     try {
       // Own translations cascade; a sub category that still has products
       // restricts the delete.
@@ -354,7 +353,7 @@ export class AdminCatalogService {
     adminId?: string;
     id: number;
   }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
     try {
       await this.prisma.storeCategoryTranslation.delete({ where: { id } });
       return true;
@@ -370,7 +369,7 @@ export class AdminCatalogService {
     adminId?: string;
     id: number;
   }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
     try {
       // Translations cascade; store products restrict.
       await this.prisma.storeSubCategory.delete({ where: { id } });
@@ -387,7 +386,7 @@ export class AdminCatalogService {
     adminId?: string;
     id: number;
   }) {
-    this.requireAdmin(adminId);
+    await assertAdminCan(this.prisma, adminId, 'MANAGE_CATEGORIES');
     try {
       await this.prisma.storeSubCategoryTranslation.delete({ where: { id } });
       return true;
@@ -397,12 +396,6 @@ export class AdminCatalogService {
   }
 
   // ─── Helpers ────────────────────────────────────────────────────────────────
-
-  private requireAdmin(adminId?: string): void {
-    if (!adminId) {
-      throw new UnauthorizedException('Admin authentication required');
-    }
-  }
 
   /** Throws when any of the listed fields is missing on a create row. */
   private requireFields<T extends object>(row: T, fields: (keyof T)[]): void {

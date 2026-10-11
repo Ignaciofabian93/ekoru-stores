@@ -10,7 +10,7 @@ import {
   Parent,
   Context,
 } from '@nestjs/graphql';
-import { Logger } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import { CurrentSeller, CurrentAdmin } from '../common/decorators';
 import type { GraphQLContext } from '../types';
 import { StoreSubCategoryEntity } from '../storeSubCategories/entities';
@@ -252,7 +252,14 @@ export class ProductsResolver {
    */
   @ResolveReference()
   async resolveReference(reference: { __typename: string; id: number }) {
-    return this.productsService.getProductById(Number(reference.id));
+    // A search hit for a product that is gone or whose seller is hidden
+    // resolves to null instead of failing the whole search response.
+    try {
+      return await this.productsService.getProductById(Number(reference.id));
+    } catch (error) {
+      if (error instanceof NotFoundException) return null;
+      throw error;
+    }
   }
 
   // Field resolvers

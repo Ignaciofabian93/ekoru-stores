@@ -77,6 +77,11 @@ enum DimensionUnit {
   FOOT
 }
 
+enum StoreStockMovementKind {
+  SALE
+  RESTOCK
+}
+
 // ─── Models ──────────────────────────────────────────────────────────────────────
 
 model StoreCategory {
@@ -356,5 +361,15 @@ model StoreProductLike {
   @@index([storeProductId])
   @@index([sellerId])
   @@index([createdAt(sort: Desc)])
+}
+
+model StoreStockMovement {
+  id        Int                    @id @default(autoincrement())
+  reference String                 @unique
+  kind      StoreStockMovementKind
+  /// [{ storeProductId, requested, applied }]. On a SALE, applied below
+  /// requested means the item was oversold.
+  items     Json
+  createdAt DateTime               @default(now())
 }
 

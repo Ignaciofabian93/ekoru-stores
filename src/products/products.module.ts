@@ -7,6 +7,8 @@ import { MaterialService } from '../services/material.service';
 import { MaterialResolver } from '../resolvers/material.resolver';
 import { ImpactRepository } from '../repositories/impact.repository';
 import { I18nService } from '../common/i18n';
+import { StockService } from './stock/stock.service';
+import { StockResolver } from './stock/stock.resolver';
 
 /**
  * Products Module
@@ -29,6 +31,8 @@ import { I18nService } from '../common/i18n';
     MaterialService,
     MaterialResolver,
     ImpactRepository,
+    StockService,
+    StockResolver,
   ],
   exports: [ProductsService, ImpactService, MaterialService],
 })
