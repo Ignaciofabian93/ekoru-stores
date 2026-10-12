@@ -230,7 +230,6 @@ model StoreProduct {
   featuredFrom  DateTime?
   featuredUntil DateTime?
 
-  productComment       ProductComment[]
   likes                StoreProductLike[]
   productVariant       ProductVariant[]
   materialCompositions StoreProductMaterialComposition[]
@@ -336,17 +335,6 @@ model StoreProductReview {
   @@index([isVerifiedPurchase])
   @@index([rating])
   @@index([storeProductId])
-}
-
-model ProductComment {
-  id             Int          @id @default(autoincrement())
-  comment        String
-  sellerId       String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  rating         Int?
-  storeProductId Int
-  storeProduct   StoreProduct @relation(fields: [storeProductId], references: [id])
 }
 
 model StoreProductLike {

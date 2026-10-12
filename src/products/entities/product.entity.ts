@@ -201,7 +201,9 @@ export class ProductEntity {
   @Field(() => EnvironmentalImpactEntity, {
     nullable: true,
     description:
-      'Environmental impact estimate based on product category materials',
+      'Always null. Store products are new, so they save nothing by reuse; show `materials` instead (STO-4, decision D3).',
+    deprecationReason:
+      'Store products show their material list (`materials`), not savings (decision D3).',
   })
   environmentalImpact?: EnvironmentalImpactEntity;
 }

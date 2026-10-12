@@ -19,7 +19,6 @@ import { ProductConnectionEntity } from './entities/product-connection.entity';
 import { EnvironmentalImpactEntity } from './entities/environmental-impact.entity';
 import { StoreProductMaterialCompositionEntity } from './entities/store-product-material-composition.entity';
 import { ProductsService } from './products.service';
-import { ImpactService } from '../services/impact.service';
 import { MaterialService } from '../services/material.service';
 import {
   StoreProductFilterInput,
@@ -34,7 +33,6 @@ export class ProductsResolver {
 
   constructor(
     private readonly productsService: ProductsService,
-    private readonly impactService: ImpactService,
     private readonly materialService: MaterialService,
   ) {}
 
@@ -300,23 +298,15 @@ export class ProductsResolver {
     return this.materialService.getProductComposition(product.id, ctx.language);
   }
 
+  /**
+   * Always null (STO-4, decision D3). The per-kg constants measure what reuse
+   * saves; a store product is new, so a "saved" figure would be a claim the
+   * purchase never earns. Clients show `materials` instead. Kept, deprecated,
+   * so clients that still ask get null rather than a schema error.
+   */
   @ResolveField(() => EnvironmentalImpactEntity, { nullable: true })
-  async environmentalImpact(
-    @Parent() product: ProductEntity,
-    @Context() ctx: GraphQLContext,
-  ) {
-    try {
-      // Impact is derived from the product's own declared material composition
-      // (StoreProductMaterialComposition), since two sellers can list the same
-      // kind of product with different materials.
-      return await this.impactService.calculateProductImpact(
-        product.id,
-        ctx.language,
-      );
-    } catch (error) {
-      this.logger.error('Error calculating environmental impact:', error);
-      return null;
-    }
+  environmentalImpact(): EnvironmentalImpactEntity | null {
+    return null;
   }
 }
 
