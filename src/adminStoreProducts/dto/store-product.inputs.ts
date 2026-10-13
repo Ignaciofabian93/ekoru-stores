@@ -155,8 +155,11 @@ export class StoreProductUpsertRowInput {
   @IsOptional()
   color?: string | null;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
+  /** Retired (STO-7): ignored. */
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Ignored (STO-7).',
+  })
   materialComposition?: string | null;
 
   @Field(() => Float, { nullable: true })

@@ -86,9 +86,10 @@ export class ProductEntity {
   viewCount: number;
 
   // Product Specifications
+  /** Retired (STO-7): always null. */
   @Field(() => String, {
     nullable: true,
-    description: 'Material composition description',
+    deprecationReason: 'Always null. Read materials instead (STO-7).',
   })
   materialComposition?: string;
 

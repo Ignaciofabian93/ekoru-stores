@@ -123,7 +123,11 @@ export class RawStoreProductEntity {
   viewCount: number;
 
   // Specifications
-  @Field(() => String, { nullable: true })
+  /** Retired (STO-7): always null. */
+  @Field(() => String, {
+    nullable: true,
+    deprecationReason: 'Always null. Read materials instead (STO-7).',
+  })
   materialComposition?: string | null;
 
   @Field(() => Float, { nullable: true })

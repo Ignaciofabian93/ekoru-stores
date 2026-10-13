@@ -139,7 +139,6 @@ export class AdminStoreProductService {
         badges: row.badges,
         brand: row.brand,
         color: row.color,
-        materialComposition: row.materialComposition,
         recycledContent: row.recycledContent,
         weight: row.weight,
         weightUnit: row.weightUnit,

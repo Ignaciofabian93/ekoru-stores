@@ -215,12 +215,11 @@ export class AddStoreProductInput {
   @IsString()
   color?: string;
 
+  /** Retired (STO-7): ignored. The structured `materials` are the composition. */
   @Field(() => String, {
     nullable: true,
-    description: 'Material composition description',
+    deprecationReason: 'Ignored. Send materials instead (STO-7).',
   })
-  @IsOptional()
-  @IsString()
   materialComposition?: string;
 
   @Field(() => Float, {
@@ -435,12 +434,11 @@ export class UpdateStoreProductInput {
   @IsString()
   color?: string;
 
+  /** Retired (STO-7): ignored. The structured `materials` are the composition. */
   @Field(() => String, {
     nullable: true,
-    description: 'Material composition description',
+    deprecationReason: 'Ignored. Send materials instead (STO-7).',
   })
-  @IsOptional()
-  @IsString()
   materialComposition?: string;
 
   @Field(() => Float, {

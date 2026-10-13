@@ -198,7 +198,6 @@ model StoreProduct {
   // Product Specifications. weight/weightUnit/size describe this product; when
   // the seller leaves them empty, the subcategory's averageWeight/weightUnit/size
   // are the fallback (impact calculation, shipping).
-  materialComposition String?
   recycledContent     Float?
   weight              Float?
   weightUnit          WeightUnit?    @default(KG)

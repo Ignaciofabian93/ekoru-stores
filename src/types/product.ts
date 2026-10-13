@@ -40,7 +40,6 @@ export type StoreProduct = {
   ratingCount: number;
   ratings: number;
   reviewsNumber: number;
-  materialComposition?: string | null;
   recycledContent?: number | null;
   subcategoryId: number;
   deletedAt?: Date | null;
