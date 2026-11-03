@@ -3,8 +3,13 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { adminSellerScope, assertAdminCan } from '../common/admin-access';
 import {
+  bulkErrorMessage,
   calculatePrismaParams,
   createPaginatedResponse,
+  pickDefined,
+  processBulkRows,
+  type BulkOutcome,
+  type BulkResult,
 } from '../common/utils';
 import {
   StoreProductUpsertRowInput,
@@ -14,16 +19,6 @@ import {
 
 /** Allowed drift from 100% (decimal splits like 33.33 + 33.33 + 33.34). */
 const COMPOSITION_TOLERANCE = 0.01;
-
-type BulkOutcome = { outcome: 'created' | 'updated'; id: number };
-
-type BulkResult = {
-  created: number;
-  updated: number;
-  failed: number;
-  createdIds: number[];
-  errors: { index: number; id?: number | null; message: string }[];
-};
 
 /**
  * Admin Store Product Service — raw reads and bulk writes over the StoreProduct
@@ -124,7 +119,7 @@ export class AdminStoreProductService {
     await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
 
     return this.processRows(rows, async (row) => {
-      const data = this.pickDefined({
+      const data = pickDefined({
         name: row.name,
         description: row.description,
         stock: row.stock,
@@ -211,7 +206,7 @@ export class AdminStoreProductService {
     await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
 
     const result = await this.processRows(rows, async (row) => {
-      const data = this.pickDefined({
+      const data = pickDefined({
         storeProductId: row.storeProductId,
         materialTypeId: row.materialTypeId,
         percentage: row.percentage,
@@ -294,7 +289,7 @@ export class AdminStoreProductService {
     await assertAdminCan(this.prisma, adminId, 'MANAGE_PRODUCTS');
 
     return this.processRows(rows, async (row) => {
-      const data = this.pickDefined({
+      const data = pickDefined({
         storeProductId: row.storeProductId,
         name: row.name,
         price: row.price,
@@ -361,12 +356,6 @@ export class AdminStoreProductService {
     }
   }
 
-  private pickDefined<T extends Record<string, unknown>>(obj: T): T {
-    return Object.fromEntries(
-      Object.entries(obj).filter(([, v]) => v !== undefined),
-    ) as T;
-  }
-
   /**
    * A store product's materials must add up to 100%, the rule sellers get in
    * products.service (STO-5). Import rows are written one at a time, so the
@@ -424,70 +413,16 @@ export class AdminStoreProductService {
     }
   }
 
-  private async processRows<T extends { id?: number | null }>(
+  private processRows<T extends { id?: number | null }>(
     rows: T[],
     handler: (row: T) => Promise<BulkOutcome>,
   ): Promise<BulkResult> {
-    const result: BulkResult = {
-      created: 0,
-      updated: 0,
-      failed: 0,
-      createdIds: [],
-      errors: [],
-    };
-
-    for (const [index, row] of rows.entries()) {
-      try {
-        const { outcome, id } = await handler(row);
-        result[outcome] += 1;
-        if (outcome === 'created') result.createdIds.push(id);
-      } catch (error) {
-        result.failed += 1;
-        result.errors.push({
-          index,
-          id: row.id ?? null,
-          message: this.errorMessage(error),
-        });
-      }
-    }
-
-    if (result.failed > 0) {
-      this.logger.warn(
-        `Bulk upsert finished with ${result.failed} failed row(s): ` +
-          result.errors
-            .map(
-              (e) => `#${e.index}${e.id ? ` (id ${e.id})` : ''}: ${e.message}`,
-            )
-            .join(' | '),
-      );
-    }
-
-    return result;
-  }
-
-  private errorMessage(error: unknown): string {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      const target = Array.isArray(error.meta?.target)
-        ? ` (${(error.meta.target as string[]).join(', ')})`
-        : '';
-      switch (error.code) {
-        case 'P2002':
-          return `Duplicate value violates a unique constraint${target}`;
-        case 'P2003':
-          return 'Invalid relation: the referenced id does not exist, or dependent rows still reference this one';
-        case 'P2025':
-          return 'Row not found';
-        default:
-          return `Database error ${error.code}`;
-      }
-    }
-    if (error instanceof Error) return error.message;
-    return 'Unknown error';
+    return processBulkRows(this.logger, rows, handler);
   }
 
   private friendlyError(error: unknown): Error {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      return new BadRequestException(this.errorMessage(error));
+      return new BadRequestException(bulkErrorMessage(error));
     }
     return error instanceof Error ? error : new Error('Unknown error');
   }

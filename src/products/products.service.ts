@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { assertAdminCan } from '../common/admin-access';
 import { Prisma } from '@prisma/client';
 import { I18nService } from '../common/i18n';
+import { Language } from '../graphql/enums';
 import {
   StoreProductFilterInput,
   StoreProductSortInput,
@@ -52,9 +53,13 @@ export class ProductsService {
    * sells products (RETAIL or MIXED), the web wizard's rule. Seller and
    * BusinessProfile belong to ekoru-users, so they are read with raw SQL. A
    * product from anyone else would be hidden anyway (STO-2); this refuses it
-   * up front with a clear message.
+   * up front with a clear message. The panel's spreadsheet import (ADM-16)
+   * applies it too, in the caller's language.
    */
-  private async assertCanPublish(sellerId: string): Promise<void> {
+  async assertCanPublish(
+    sellerId: string,
+    lang: Language = this.i18nService.getDefaultLanguage(),
+  ): Promise<void> {
     const rows = await this.prisma.$queryRaw<
       {
         isActive: boolean;
@@ -75,10 +80,7 @@ export class ProductsService {
       !['RETAIL', 'MIXED'].includes(seller.businessType ?? '')
     ) {
       throw new ForbiddenException(
-        this.i18nService.translate(
-          'errors.store_publish_forbidden',
-          this.i18nService.getDefaultLanguage(),
-        ),
+        this.i18nService.translate('errors.store_publish_forbidden', lang),
       );
     }
   }
@@ -597,13 +599,13 @@ export class ProductsService {
    * A declared composition must describe the whole product: at least one
    * material, each listed once, percentages adding up to 100, and every
    * material present in MaterialImpactEstimate (otherwise the insert would
-   * fail on the foreign key with an opaque error).
+   * fail on the foreign key with an opaque error). The spreadsheet import
+   * (ADM-16) checks each row with it.
    */
-  private async assertValidComposition(
+  async assertValidComposition(
     materials: StoreProductMaterialInput[] | undefined,
+    lang: Language = this.i18nService.getDefaultLanguage(),
   ) {
-    const lang = this.i18nService.getDefaultLanguage();
-
     if (!materials?.length) {
       throw new BadRequestException(
         this.i18nService.translate('errors.materials_required', lang),

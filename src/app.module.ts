@@ -19,6 +19,7 @@ import { StoreCategoriesModule } from './storeCategories';
 import { StoreSubCategoriesModule } from './storeSubCategories';
 import { AdminCatalogModule } from './adminCatalog';
 import { AdminStoreProductModule } from './adminStoreProducts';
+import { BusinessProductsModule } from './businessProducts';
 import { createContextFactory } from './graphql/context';
 import { ProductsModule } from './products/products.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -88,6 +89,9 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     // Platform-admin CRUD over store catalog tables (raw reads, bulk upserts, deletes)
     AdminCatalogModule,
     AdminStoreProductModule,
+
+    // A business publishing its own catalog from the panel (ADM-16)
+    BusinessProductsModule,
   ],
   providers: [
     JSONScalar,

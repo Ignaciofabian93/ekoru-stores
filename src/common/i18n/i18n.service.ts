@@ -143,6 +143,66 @@ const TRANSLATIONS: TranslationMap = {
     [Language.PT]: 'Material não encontrado: {ids}',
     [Language.DE]: 'Material nicht gefunden: {ids}',
   },
+  // ─── Spreadsheet publishing from the panel (ADM-16) ─────────────────────
+  'errors.bulk_too_many_rows': {
+    [Language.ES]: 'Sube como máximo {max} productos por vez',
+    [Language.EN]: 'Upload at most {max} products at a time',
+    [Language.FR]: 'Importez au maximum {max} produits à la fois',
+    [Language.PT]: 'Envie no máximo {max} produtos por vez',
+    [Language.DE]: 'Laden Sie höchstens {max} Produkte auf einmal hoch',
+  },
+  'errors.bulk_missing_fields': {
+    [Language.ES]: 'Faltan datos obligatorios: {fields}',
+    [Language.EN]: 'Required data missing: {fields}',
+    [Language.FR]: 'Données obligatoires manquantes : {fields}',
+    [Language.PT]: 'Faltam dados obrigatórios: {fields}',
+    [Language.DE]: 'Pflichtangaben fehlen: {fields}',
+  },
+  'errors.bulk_not_in_store': {
+    [Language.ES]: 'El producto {id} no existe en tu tienda',
+    [Language.EN]: 'Product {id} does not exist in your store',
+    [Language.FR]: "Le produit {id} n'existe pas dans votre boutique",
+    [Language.PT]: 'O produto {id} não existe na sua loja',
+    [Language.DE]: 'Produkt {id} gibt es in Ihrem Shop nicht',
+  },
+  'errors.bulk_product_deleted': {
+    [Language.ES]:
+      'El producto {id} fue eliminado. Para publicarlo de nuevo, deja el id vacío',
+    [Language.EN]:
+      'Product {id} was deleted. To publish it again, leave the id empty',
+    [Language.FR]:
+      "Le produit {id} a été supprimé. Pour le republier, laissez l'id vide",
+    [Language.PT]:
+      'O produto {id} foi excluído. Para publicá-lo de novo, deixe o id vazio',
+    [Language.DE]:
+      'Produkt {id} wurde gelöscht. Um es erneut zu veröffentlichen, lassen Sie die ID leer',
+  },
+  'errors.bulk_subcategory_not_found': {
+    [Language.ES]: 'La subcategoría {id} no existe',
+    [Language.EN]: 'Subcategory {id} does not exist',
+    [Language.FR]: "La sous-catégorie {id} n'existe pas",
+    [Language.PT]: 'A subcategoria {id} não existe',
+    [Language.DE]: 'Unterkategorie {id} existiert nicht',
+  },
+  'errors.bulk_image_host': {
+    [Language.ES]:
+      'Las fotos deben estar subidas a EKORU ({hosts}). Deja la columna vacía y agrégalas después en la web',
+    [Language.EN]:
+      'Photos must be uploaded to EKORU ({hosts}). Leave the column empty and add them later on the web',
+    [Language.FR]:
+      'Les photos doivent être hébergées sur EKORU ({hosts}). Laissez la colonne vide et ajoutez-les ensuite sur le web',
+    [Language.PT]:
+      'As fotos devem estar hospedadas na EKORU ({hosts}). Deixe a coluna vazia e adicione-as depois na web',
+    [Language.DE]:
+      'Fotos müssen bei EKORU liegen ({hosts}). Lassen Sie die Spalte leer und fügen Sie sie später im Web hinzu',
+  },
+  'errors.bulk_offer_price': {
+    [Language.ES]: 'El precio de oferta debe ser menor que el precio',
+    [Language.EN]: 'The offer price must be lower than the price',
+    [Language.FR]: 'Le prix promotionnel doit être inférieur au prix',
+    [Language.PT]: 'O preço de oferta deve ser menor que o preço',
+    [Language.DE]: 'Der Angebotspreis muss unter dem Preis liegen',
+  },
 };
 
 /**
