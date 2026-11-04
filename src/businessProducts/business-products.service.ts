@@ -13,6 +13,9 @@ export const MAX_ROWS_PER_CALL = 200;
 /** Where EKORU's photos live; next/image on the web renders nothing else. */
 const IMAGE_HOSTS = ['images.ekoru.cl', 'staging-images.ekoru.cl'];
 
+/** Photos per product, as on the web and the panel's Catálogo y fotos. */
+export const MAX_IMAGES = 3;
+
 const REQUIRED_ON_CREATE = [
   'name',
   'description',
@@ -240,6 +243,13 @@ export class BusinessProductsService {
     sellerId: string,
     lang: Language,
   ) {
+    if (images.length > MAX_IMAGES) {
+      throw new BadRequestException(
+        this.i18n.translate('errors.bulk_too_many_images', lang, {
+          max: String(MAX_IMAGES),
+        }),
+      );
+    }
     const ours = (image: string) => {
       if (image.startsWith(`product/${sellerId}/`)) return true;
       try {

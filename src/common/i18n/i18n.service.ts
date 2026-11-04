@@ -186,15 +186,22 @@ const TRANSLATIONS: TranslationMap = {
   },
   'errors.bulk_image_host': {
     [Language.ES]:
-      'Las fotos deben estar subidas a EKORU ({hosts}). Deja la columna vacía y agrégalas después en la web',
+      'Las fotos deben estar subidas a EKORU ({hosts}). Deja la columna vacía y agrégalas después en Catálogo y fotos',
     [Language.EN]:
-      'Photos must be uploaded to EKORU ({hosts}). Leave the column empty and add them later on the web',
+      'Photos must be uploaded to EKORU ({hosts}). Leave the column empty and add them later in Catalog and photos',
     [Language.FR]:
-      'Les photos doivent être hébergées sur EKORU ({hosts}). Laissez la colonne vide et ajoutez-les ensuite sur le web',
+      'Les photos doivent être hébergées sur EKORU ({hosts}). Laissez la colonne vide et ajoutez-les ensuite dans Catalogue et photos',
     [Language.PT]:
-      'As fotos devem estar hospedadas na EKORU ({hosts}). Deixe a coluna vazia e adicione-as depois na web',
+      'As fotos devem estar hospedadas na EKORU ({hosts}). Deixe a coluna vazia e adicione-as depois em Catálogo e fotos',
     [Language.DE]:
-      'Fotos müssen bei EKORU liegen ({hosts}). Lassen Sie die Spalte leer und fügen Sie sie später im Web hinzu',
+      'Fotos müssen bei EKORU liegen ({hosts}). Lassen Sie die Spalte leer und fügen Sie sie später unter Katalog und Fotos hinzu',
+  },
+  'errors.bulk_too_many_images': {
+    [Language.ES]: 'Cada producto lleva como máximo {max} fotos',
+    [Language.EN]: 'Each product takes at most {max} photos',
+    [Language.FR]: 'Chaque produit accepte au maximum {max} photos',
+    [Language.PT]: 'Cada produto aceita no máximo {max} fotos',
+    [Language.DE]: 'Jedes Produkt hat höchstens {max} Fotos',
   },
   'errors.bulk_offer_price': {
     [Language.ES]: 'El precio de oferta debe ser menor que el precio',

@@ -123,13 +123,17 @@ describe('BusinessProductsService (ADM-16)', () => {
         { ...newRow, name: '' },
         { ...newRow, images: ['https://example.com/x.jpg'] },
         { ...newRow, hasOffer: true, offerPrice: 15000 },
+        {
+          ...newRow,
+          images: ['a', 'b', 'c', 'd'].map((k) => `product/store-1/${k}.webp`),
+        },
         newRow,
       ],
       language: Language.ES,
     });
 
     expect(result.created).toBe(1);
-    expect(result.failed).toBe(6);
+    expect(result.failed).toBe(7);
     expect(result.errors.map((e) => [e.index, e.message])).toEqual([
       [0, 'El producto 7 no existe en tu tienda'],
       [1, 'Los porcentajes de los materiales deben sumar 100 (suman 60)'],
@@ -137,6 +141,7 @@ describe('BusinessProductsService (ADM-16)', () => {
       [3, 'Faltan datos obligatorios: name'],
       [4, expect.stringContaining('Las fotos deben estar subidas a EKORU')],
       [5, 'El precio de oferta debe ser menor que el precio'],
+      [6, 'Cada producto lleva como máximo 3 fotos'],
     ]);
     expect(prisma.storeProduct.update).not.toHaveBeenCalled();
   });
