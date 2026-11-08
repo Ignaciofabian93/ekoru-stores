@@ -16,6 +16,7 @@ import type { GraphQLContext } from '../types';
 import { StoreSubCategoryEntity } from '../storeSubCategories/entities';
 import { ProductEntity, SellerEntity } from './entities/product.entity';
 import { ProductConnectionEntity } from './entities/product-connection.entity';
+import { StoreSellerEntity } from './entities/store-seller.entity';
 import { EnvironmentalImpactEntity } from './entities/environmental-impact.entity';
 import { StoreProductMaterialCompositionEntity } from './entities/store-product-material-composition.entity';
 import { ProductsService } from './products.service';
@@ -45,6 +46,29 @@ export class ProductsResolver {
    * Batch price/seller/stock lookup for checkout (called by the transactions
    * subgraph). Plain list query — the caller matches results to requested ids.
    */
+  @Query(() => [StoreSellerEntity], {
+    name: 'getStoreSellers',
+    description:
+      'Businesses with visible store products, most products first, for the ' +
+      'stores row on /stores. With categoryId, only those selling in that ' +
+      'store category. Public.',
+  })
+  async getStoreSellers(
+    @Args('categoryId', { type: () => ID, nullable: true }) categoryId?: string,
+    @Args('limit', { type: () => Int, defaultValue: 24 }) limit: number = 24,
+  ): Promise<StoreSellerEntity[]> {
+    const id = categoryId ? Number(categoryId) : undefined;
+    if (id !== undefined && !Number.isInteger(id)) return [];
+    const rows = await this.productsService.getStoreSellers({
+      categoryId: id,
+      limit,
+    });
+    return rows.map((row) => ({
+      ...row,
+      seller: { __typename: 'Seller', id: row.sellerId },
+    }));
+  }
+
   @Query(() => [ProductEntity], { name: 'storeProductsByIds' })
   async storeProductsByIds(@Args('ids', { type: () => [Int] }) ids: number[]) {
     return this.productsService.getProductsByIds(ids);

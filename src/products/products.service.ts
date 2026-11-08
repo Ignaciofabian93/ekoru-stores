@@ -216,6 +216,54 @@ export class ProductsService {
     return this.createPaginatedResponse(products, totalCount, page, pageSize);
   }
 
+  /** Most stores the stores row asks for at once. */
+  static readonly MAX_STORE_SELLERS = 50;
+
+  /**
+   * Businesses with store products the public can see, most products first,
+   * for the stores row on /stores. With `categoryId`, only products in that
+   * category's active subcategories count, the same rule as
+   * getProductsByStoreCategory, so the row and the grid agree. Hidden sellers
+   * (STO-2) never appear.
+   */
+  async getStoreSellers({
+    categoryId,
+    limit,
+  }: {
+    categoryId?: number;
+    limit: number;
+  }): Promise<{ sellerId: string; productCount: number }[]> {
+    const take = Math.min(
+      Math.max(Math.trunc(limit) || 1, 1),
+      ProductsService.MAX_STORE_SELLERS,
+    );
+    const where = this.buildWhereClause({
+      hidden: await this.hiddenSellerIds(),
+    });
+
+    if (categoryId !== undefined) {
+      const subCategories = await this.prisma.storeSubCategory.findMany({
+        where: { storeCategoryId: categoryId, isActive: true },
+        select: { id: true },
+      });
+      if (subCategories.length === 0) return [];
+      where.subCategoryId = { in: subCategories.map((sc) => sc.id) };
+    }
+
+    const groups = await this.prisma.storeProduct.groupBy({
+      by: ['sellerId'],
+      where,
+      _count: { sellerId: true },
+      orderBy: [{ _count: { sellerId: 'desc' } }, { sellerId: 'asc' }],
+      take,
+    });
+
+    return groups.map((g) => ({
+      sellerId: g.sellerId,
+      productCount: g._count.sellerId,
+    }));
+  }
+
   /**
    * Get store products by seller ID
    */

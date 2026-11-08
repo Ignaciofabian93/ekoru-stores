@@ -8,6 +8,7 @@ describe('ProductsService', () => {
   let prisma: {
     $queryRaw: jest.Mock;
     storeProduct: Record<string, jest.Mock>;
+    storeSubCategory: { findMany: jest.Mock };
     materialImpactEstimate: { findMany: jest.Mock };
   };
   let service: ProductsService;
@@ -45,7 +46,9 @@ describe('ProductsService', () => {
         count: jest.fn().mockResolvedValue(0),
         create: jest.fn().mockResolvedValue({ id: 1 }),
         update: jest.fn().mockResolvedValue({ id: 1 }),
+        groupBy: jest.fn().mockResolvedValue([]),
       },
+      storeSubCategory: { findMany: jest.fn().mockResolvedValue([]) },
       materialImpactEstimate: { findMany: jest.fn() },
     };
     const i18n = {
@@ -204,6 +207,65 @@ describe('ProductsService', () => {
     expect(prisma.storeProduct.findMany.mock.calls[0][0].where.price).toEqual({
       gte: 1000,
       lte: 5000,
+    });
+  });
+
+  describe('stores row (getStoreSellers)', () => {
+    it('counts visible products per seller, most first, without hidden sellers', async () => {
+      hidden.push({ sellerId: 'banned' });
+      prisma.storeProduct.groupBy.mockResolvedValue([
+        { sellerId: 's1', _count: { sellerId: 7 } },
+        { sellerId: 's2', _count: { sellerId: 2 } },
+      ]);
+
+      await expect(service.getStoreSellers({ limit: 24 })).resolves.toEqual([
+        { sellerId: 's1', productCount: 7 },
+        { sellerId: 's2', productCount: 2 },
+      ]);
+
+      const args = prisma.storeProduct.groupBy.mock.calls[0][0];
+      expect(args.by).toEqual(['sellerId']);
+      expect(args.where).toMatchObject({
+        isActive: true,
+        deletedAt: null,
+        sellerId: { notIn: ['banned'] },
+      });
+      expect(args.where.subCategoryId).toBeUndefined();
+      expect(args.orderBy[0]).toEqual({ _count: { sellerId: 'desc' } });
+      expect(args.take).toBe(24);
+    });
+
+    it("counts only the category's active subcategories, like the product grid", async () => {
+      prisma.storeSubCategory.findMany.mockResolvedValue([
+        { id: 4 },
+        { id: 9 },
+      ]);
+
+      await service.getStoreSellers({ categoryId: 3, limit: 24 });
+
+      expect(prisma.storeSubCategory.findMany).toHaveBeenCalledWith({
+        where: { storeCategoryId: 3, isActive: true },
+        select: { id: true },
+      });
+      expect(
+        prisma.storeProduct.groupBy.mock.calls[0][0].where.subCategoryId,
+      ).toEqual({
+        in: [4, 9],
+      });
+    });
+
+    it('returns nothing for a category without active subcategories', async () => {
+      await expect(
+        service.getStoreSellers({ categoryId: 3, limit: 24 }),
+      ).resolves.toEqual([]);
+      expect(prisma.storeProduct.groupBy).not.toHaveBeenCalled();
+    });
+
+    it('keeps the limit between 1 and 50', async () => {
+      await service.getStoreSellers({ limit: 500 });
+      await service.getStoreSellers({ limit: 0 });
+      expect(prisma.storeProduct.groupBy.mock.calls[0][0].take).toBe(50);
+      expect(prisma.storeProduct.groupBy.mock.calls[1][0].take).toBe(1);
     });
   });
 
