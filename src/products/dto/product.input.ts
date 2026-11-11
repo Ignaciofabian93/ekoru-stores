@@ -13,6 +13,7 @@ import {
   IsIn,
   ValidateNested,
   ArrayNotEmpty,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Badge, WeightUnit, DimensionUnit, ProductSize } from '@prisma/client';
@@ -112,6 +113,19 @@ export class StoreProductFilterInput {
   @IsNumber()
   @Min(0)
   minRating?: number;
+
+  @Field(() => [Int], {
+    nullable: true,
+    description:
+      "Only products whose store's primary address is in one of these " +
+      'counties (ids from the users subgraph `countiesNear`). An empty list ' +
+      'matches nothing; omit it for no location filter.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(500)
+  @IsInt({ each: true })
+  countyIds?: number[];
 }
 
 /**

@@ -13,14 +13,16 @@ describe('ProductsService', () => {
   };
   let service: ProductsService;
 
-  // The raw SQL calls this service makes: the hidden-seller list and, for
-  // admins, the Admin row (SEC-8).
+  // The raw SQL calls this service makes: the hidden-seller list, the stores
+  // in a set of counties and, for admins, the Admin row (SEC-8).
   const hidden: { sellerId: string }[] = [];
+  const near: { sellerId: string }[] = [];
   let adminRow: Record<string, unknown> | null = null;
   let publisher: Record<string, unknown>[] = [];
 
   beforeEach(() => {
     hidden.length = 0;
+    near.length = 0;
     adminRow = null;
     publisher = [
       { isActive: true, approvalStatus: 'APPROVED', businessType: 'RETAIL' },
@@ -30,6 +32,9 @@ describe('ProductsService', () => {
         const sql = strings.join('?');
         if (sql.includes('FROM "Admin"')) {
           return Promise.resolve(adminRow ? [adminRow] : []);
+        }
+        if (sql.includes('"countyId"')) {
+          return Promise.resolve(near);
         }
         if (
           sql.includes('LEFT JOIN "BusinessProfile"') &&
@@ -157,6 +162,31 @@ describe('ProductsService', () => {
       });
       const where = prisma.storeProduct.findMany.mock.calls[0][0].where;
       expect(where.sellerId).toEqual({ notIn: ['banned-1', 'me'] });
+    });
+
+    it('keeps only stores located in the given counties, hidden ones still out', async () => {
+      hidden.push({ sellerId: 'banned-1' });
+      near.push({ sellerId: 'near-1' }, { sellerId: 'banned-1' });
+      await service.getProducts({
+        page: 1,
+        pageSize: 10,
+        filter: { countyIds: [10, 11] },
+      });
+      const where = prisma.storeProduct.findMany.mock.calls[0][0].where;
+      expect(where.sellerId).toEqual({
+        notIn: ['banned-1'],
+        in: ['near-1', 'banned-1'],
+      });
+    });
+
+    it('matches no store for an empty county list', async () => {
+      await service.getProductsOnOffer({
+        page: 1,
+        pageSize: 10,
+        filter: { countyIds: [] },
+      });
+      const where = prisma.storeProduct.findMany.mock.calls[0][0].where;
+      expect(where.sellerId).toEqual({ in: [] });
     });
 
     it("keeps them out of checkout's product lookup", async () => {

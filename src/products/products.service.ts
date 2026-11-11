@@ -121,6 +121,27 @@ export class ProductsService {
   }
 
   /**
+   * Stores whose primary address is in one of `countyIds` and that have a
+   * live product, for the `countyIds` filter; undefined when there is no such
+   * filter. Seller belongs to ekoru-users, so this is raw SQL, joined to
+   * StoreProduct to keep the list to stores that can actually match.
+   */
+  private async sellersInCounties(
+    countyIds?: number[],
+  ): Promise<string[] | undefined> {
+    if (!countyIds) return undefined;
+    if (countyIds.length === 0) return [];
+    const rows = await this.prisma.$queryRaw<{ sellerId: string }[]>`
+      SELECT DISTINCT sp."sellerId"
+        FROM "StoreProduct" sp
+        JOIN "Seller" s ON s."id" = sp."sellerId"
+       WHERE s."countyId" IN (${Prisma.join(countyIds)})
+         AND sp."isActive" = true
+         AND sp."deletedAt" IS NULL`;
+    return rows.map((r) => r.sellerId);
+  }
+
+  /**
    * Get a single store product by ID
    */
   async getProductById(id: number) {
@@ -196,6 +217,7 @@ export class ProductsService {
       filter,
       excludeSellerId,
       hidden: await this.hiddenSellerIds(),
+      near: await this.sellersInCounties(filter?.countyIds),
     });
     const orderBy = this.buildOrderBy(sort);
 
@@ -332,6 +354,7 @@ export class ProductsService {
         filter,
         excludeSellerId,
         hidden: await this.hiddenSellerIds(),
+        near: await this.sellersInCounties(filter?.countyIds),
       }),
       subCategoryId,
     };
@@ -395,6 +418,7 @@ export class ProductsService {
         filter,
         excludeSellerId,
         hidden: await this.hiddenSellerIds(),
+        near: await this.sellersInCounties(filter?.countyIds),
       }),
       subCategoryId: {
         in: subCategoryIds,
@@ -440,6 +464,7 @@ export class ProductsService {
         filter,
         excludeSellerId,
         hidden: await this.hiddenSellerIds(),
+        near: await this.sellersInCounties(filter?.countyIds),
       }),
       hasOffer: true,
     };
@@ -918,11 +943,14 @@ export class ProductsService {
     filter,
     excludeSellerId,
     hidden = [],
+    near,
   }: {
     filter?: StoreProductFilterInput;
     excludeSellerId?: string;
     /** Sellers whose products are not shown (`hiddenSellerIds`). */
     hidden?: string[];
+    /** Only these sellers (`sellersInCounties`); undefined means anyone. */
+    near?: string[];
   }): Prisma.StoreProductWhereInput {
     const where: Prisma.StoreProductWhereInput = {
       isActive: true,
@@ -930,8 +958,11 @@ export class ProductsService {
     };
 
     const notIn = excludeSellerId ? [...hidden, excludeSellerId] : hidden;
-    if (notIn.length) {
-      where.sellerId = { notIn };
+    if (notIn.length || near) {
+      where.sellerId = {
+        ...(notIn.length ? { notIn } : {}),
+        ...(near ? { in: near } : {}),
+      };
     }
 
     if (!filter) {
