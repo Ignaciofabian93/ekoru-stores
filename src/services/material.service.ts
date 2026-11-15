@@ -1,9 +1,6 @@
-import {
-  Injectable,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import type { Language } from '@prisma/client';
+import { ConflictError } from '../common/exceptions';
 import { ImpactRepository } from '../repositories/impact.repository';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertAdminCan } from '../common/admin-access';
@@ -95,7 +92,7 @@ export class MaterialService {
     const existing =
       await this.impactRepository.findMaterialByType(materialType);
     if (existing) {
-      throw new ConflictException(`Material "${materialType}" already exists.`);
+      throw new ConflictError(`Material "${materialType}" already exists.`);
     }
 
     const created = await this.impactRepository.createMaterial({

@@ -50,6 +50,17 @@ export class UserError extends GraphQLError {
   }
 }
 
+/** The row already exists (CONFLICT, which the gateway passes to the caller). */
+export class ConflictError extends GraphQLError {
+  constructor(message: string) {
+    super(message, {
+      extensions: {
+        code: 'CONFLICT',
+      },
+    });
+  }
+}
+
 /**
  * A signed-in caller who may not do this. FORBIDDEN rather than UNAUTHORIZED,
  * so the admin panel keeps the session instead of logging the admin out.

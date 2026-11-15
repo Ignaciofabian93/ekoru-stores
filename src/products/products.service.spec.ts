@@ -213,7 +213,11 @@ describe('ProductsService', () => {
     it('treats a hidden or deleted product page as not found', async () => {
       hidden.push({ sellerId: 'banned-1' });
       prisma.storeProduct.findFirst.mockResolvedValue(null);
-      await expect(service.getProductById(5)).rejects.toThrow();
+      // NOT_FOUND, not Nest's NotFoundException: the Apollo driver turns a
+      // 404 into INTERNAL_SERVER_ERROR, which the gateway hides and alerts on.
+      await expect(service.getProductById(5)).rejects.toMatchObject({
+        extensions: { code: 'NOT_FOUND' },
+      });
       expect(prisma.storeProduct.findFirst.mock.calls[0][0].where).toEqual({
         id: 5,
         deletedAt: null,

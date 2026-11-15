@@ -2,10 +2,10 @@ import {
   BadRequestException,
   Injectable,
   Logger,
-  NotFoundException,
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
+import { NotFoundError } from '../common/exceptions';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertAdminCan } from '../common/admin-access';
 import { Prisma } from '@prisma/client';
@@ -166,7 +166,7 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate(
           'errors.store_product_not_found',
           this.i18nService.getDefaultLanguage(),
@@ -518,7 +518,7 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate('errors.store_product_not_found', lang, {
           id: String(input.id),
         }),
@@ -592,7 +592,7 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate('errors.store_product_not_found', lang, {
           id: String(id),
         }),
@@ -697,7 +697,7 @@ export class ProductsService {
     });
 
     if (!product) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate('errors.store_product_not_found', lang, {
           id: String(id),
         }),
@@ -755,7 +755,7 @@ export class ProductsService {
     });
 
     if (!product || product.deletedAt) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate('errors.store_product_not_found', lang, {
           id: String(storeProductId),
         }),

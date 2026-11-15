@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { NotFoundError } from '../common/exceptions';
 import { Language } from '../graphql/enums';
 import { StoreCategoryRepository } from './store-category.repository';
 import { I18nStoreCategoryService } from './i18n';
@@ -82,7 +78,7 @@ export class StoreCategoryService {
   /**
    * Gets a store category by its ID (admin panel)
    *
-   * @throws {NotFoundException} If store category is not found
+   * @throws {NotFoundError} If store category is not found
    */
   async getStoreCategoryById({
     id,
@@ -95,7 +91,7 @@ export class StoreCategoryService {
     const storeCategory = await this.storeCategoryRepository.findById(id);
 
     if (!storeCategory) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate(
           'errors.store_category_not_found_id',
           language,
@@ -110,7 +106,7 @@ export class StoreCategoryService {
   /**
    * Gets a store category by its slug (web browsing)
    *
-   * @throws {NotFoundException} If store category is not found
+   * @throws {NotFoundError} If store category is not found
    *
    * @example
    * const storeCategory = await getStoreCategoryBySlug({ slug: 'moda', language: Language.ES });
@@ -129,7 +125,7 @@ export class StoreCategoryService {
     );
 
     if (!storeCategory) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate(
           'errors.store_category_not_found',
           language,

@@ -1,9 +1,5 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { NotFoundError } from '../common/exceptions';
 import { Language } from '../graphql/enums';
 import { StoreSubCategoryRepository } from './store-sub-category.repository';
 import { I18nStoreSubCategoryService } from './i18n';
@@ -79,7 +75,7 @@ export class StoreSubCategoryService {
   /**
    * Gets a store sub category by its ID (admin panel)
    *
-   * @throws {NotFoundException} If store sub category is not found
+   * @throws {NotFoundError} If store sub category is not found
    */
   async getStoreSubCategoryById({
     id,
@@ -92,7 +88,7 @@ export class StoreSubCategoryService {
     const subCategory = await this.storeSubCategoryRepository.findById(id);
 
     if (!subCategory) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate(
           'errors.store_sub_category_not_found_id',
           language,
@@ -107,7 +103,7 @@ export class StoreSubCategoryService {
   /**
    * Gets a store sub category by its slug (web browsing)
    *
-   * @throws {NotFoundException} If store sub category is not found
+   * @throws {NotFoundError} If store sub category is not found
    *
    * @example
    * const subCategory = await getStoreSubCategoryBySlug({ slug: 'carteras', language: Language.ES });
@@ -126,7 +122,7 @@ export class StoreSubCategoryService {
     );
 
     if (!subCategory) {
-      throw new NotFoundException(
+      throw new NotFoundError(
         this.i18nService.translate(
           'errors.store_sub_category_not_found',
           language,

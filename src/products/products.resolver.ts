@@ -10,8 +10,9 @@ import {
   Parent,
   Context,
 } from '@nestjs/graphql';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { CurrentSeller, CurrentAdmin } from '../common/decorators';
+import { NotFoundError } from '../common/exceptions';
 import type { GraphQLContext } from '../types';
 import { StoreSubCategoryEntity } from '../storeSubCategories/entities';
 import { ProductEntity, SellerEntity } from './entities/product.entity';
@@ -279,7 +280,7 @@ export class ProductsResolver {
     try {
       return await this.productsService.getProductById(Number(reference.id));
     } catch (error) {
-      if (error instanceof NotFoundException) return null;
+      if (error instanceof NotFoundError) return null;
       throw error;
     }
   }
