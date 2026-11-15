@@ -240,6 +240,65 @@ describe('ProductsService', () => {
     });
   });
 
+  describe('price sort by the price the buyer pays (WEB-25)', () => {
+    // Staging's case: "Test producto 2" is $8.000 on offer ($15.000 before).
+    const prices = [
+      { id: 1, price: 10_000, hasOffer: false, offerPrice: null },
+      { id: 2, price: 15_000, hasOffer: true, offerPrice: 8_000 },
+      { id: 3, price: 12_000, hasOffer: false, offerPrice: null },
+      // An offer flag without a usable price keeps the list price, as the cart does.
+      { id: 4, price: 9_000, hasOffer: true, offerPrice: null },
+    ];
+
+    beforeEach(() => {
+      prisma.storeProduct.findMany.mockImplementation(
+        (args: { select?: unknown; where: { id?: { in: number[] } } }) =>
+          Promise.resolve(
+            args.select
+              ? prices
+              : // The page load returns rows in any order; the service restores it.
+                [...(args.where.id?.in ?? [])]
+                  .reverse()
+                  .map((id) => ({ id, name: `p${id}` })),
+          ),
+      );
+    });
+
+    it('lists $8.000 on offer before $10.000, low to high', async () => {
+      const page = await service.getProducts({
+        page: 1,
+        pageSize: 10,
+        sort: { field: 'price', order: 'asc' },
+      });
+      expect(page.nodes.map((p: { id: number }) => p.id)).toEqual([2, 4, 1, 3]);
+    });
+
+    it('high to low, paged after ordering', async () => {
+      const page = await service.getProductsOnOffer({
+        page: 2,
+        pageSize: 2,
+        sort: { field: 'price', order: 'desc' },
+      });
+      // Order: 3 (12.000), 1 (10.000), 4 (9.000), 2 (8.000); page 2 is 4, 2.
+      expect(page.nodes.map((p: { id: number }) => p.id)).toEqual([4, 2]);
+      const pageLoad = prisma.storeProduct.findMany.mock.calls[1][0];
+      expect(pageLoad.where).toEqual({ id: { in: [4, 2] } });
+      expect(pageLoad.include).toEqual({ storeSubCategory: true });
+    });
+
+    it('keeps other sorts in the database', async () => {
+      await service.getProducts({
+        page: 1,
+        pageSize: 10,
+        sort: { field: 'name', order: 'asc' },
+      });
+      expect(prisma.storeProduct.findMany).toHaveBeenCalledTimes(1);
+      expect(prisma.storeProduct.findMany.mock.calls[0][0].orderBy).toEqual({
+        name: 'asc',
+      });
+    });
+  });
+
   describe('stores row (getStoreSellers)', () => {
     it('counts visible products per seller, most first, without hidden sellers', async () => {
       hidden.push({ sellerId: 'banned' });

@@ -219,18 +219,11 @@ export class ProductsService {
       hidden: await this.hiddenSellerIds(),
       near: await this.sellersInCounties(filter?.countyIds),
     });
-    const orderBy = this.buildOrderBy(sort);
 
     const [products, totalCount] = await Promise.all([
-      this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take: pageSize,
-        include: {
-          storeSubCategory: true,
-          materialCompositions: true,
-        },
+      this.findPage(where, sort, skip, pageSize, {
+        storeSubCategory: true,
+        materialCompositions: true,
       }),
       this.prisma.storeProduct.count({ where }),
     ]);
@@ -311,18 +304,9 @@ export class ProductsService {
       ...this.buildWhereClause({ filter }),
       sellerId,
     };
-    const orderBy = this.buildOrderBy(sort);
 
     const [products, totalCount] = await Promise.all([
-      this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take: pageSize,
-        include: {
-          storeSubCategory: true,
-        },
-      }),
+      this.findPage(where, sort, skip, pageSize, { storeSubCategory: true }),
       this.prisma.storeProduct.count({ where }),
     ]);
 
@@ -358,18 +342,9 @@ export class ProductsService {
       }),
       subCategoryId,
     };
-    const orderBy = this.buildOrderBy(sort);
 
     const [products, totalCount] = await Promise.all([
-      this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take: pageSize,
-        include: {
-          storeSubCategory: true,
-        },
-      }),
+      this.findPage(where, sort, skip, pageSize, { storeSubCategory: true }),
       this.prisma.storeProduct.count({ where }),
     ]);
 
@@ -424,18 +399,9 @@ export class ProductsService {
         in: subCategoryIds,
       },
     };
-    const orderBy = this.buildOrderBy(sort);
 
     const [products, totalCount] = await Promise.all([
-      this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take: pageSize,
-        include: {
-          storeSubCategory: true,
-        },
-      }),
+      this.findPage(where, sort, skip, pageSize, { storeSubCategory: true }),
       this.prisma.storeProduct.count({ where }),
     ]);
 
@@ -468,18 +434,9 @@ export class ProductsService {
       }),
       hasOffer: true,
     };
-    const orderBy = this.buildOrderBy(sort);
 
     const [products, totalCount] = await Promise.all([
-      this.prisma.storeProduct.findMany({
-        where,
-        orderBy,
-        skip,
-        take: pageSize,
-        include: {
-          storeSubCategory: true,
-        },
-      }),
+      this.findPage(where, sort, skip, pageSize, { storeSubCategory: true }),
       this.prisma.storeProduct.count({ where }),
     ]);
 
@@ -880,6 +837,67 @@ export class ProductsService {
 
     const products = likes.map((like) => like.storeProduct);
     return this.createPaginatedResponse(products, totalCount, page, pageSize);
+  }
+
+  /**
+   * One page of a listing. A price sort orders by the price the buyer pays,
+   * the offer price when there is one, as the cards and the cart show it
+   * (WEB-25): ordering by the `price` column listed an $8.000 offer (was
+   * $15.000) after a $10.000 product. Prisma can't order by that expression,
+   * so a price sort reads the matching ids and prices, orders them here and
+   * loads the page. Catalogs are small in the beta; past tens of thousands of
+   * products this wants a stored column instead.
+   */
+  private async findPage(
+    where: Prisma.StoreProductWhereInput,
+    sort: StoreProductSortInput | undefined,
+    skip: number,
+    take: number,
+    include: Prisma.StoreProductInclude,
+  ) {
+    if (sort?.field !== 'price') {
+      return this.prisma.storeProduct.findMany({
+        where,
+        orderBy: this.buildOrderBy(sort),
+        skip,
+        take,
+        include,
+      });
+    }
+
+    const direction = sort.order === 'asc' ? 1 : -1;
+    const prices = await this.prisma.storeProduct.findMany({
+      where,
+      select: { id: true, price: true, hasOffer: true, offerPrice: true },
+    });
+    const ids = prices
+      .sort(
+        (a, b) =>
+          direction *
+            (ProductsService.buyerPrice(a) - ProductsService.buyerPrice(b)) ||
+          a.id - b.id,
+      )
+      .slice(skip, skip + take)
+      .map((p) => p.id);
+    if (ids.length === 0) return [];
+
+    const rows = await this.prisma.storeProduct.findMany({
+      where: { id: { in: ids } },
+      include,
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return ids.flatMap((id) => byId.get(id) ?? []);
+  }
+
+  /** The price a buyer pays: the offer when there is one (the cart's rule). */
+  static buyerPrice(p: {
+    price: number;
+    hasOffer: boolean;
+    offerPrice: number | null;
+  }): number {
+    return p.hasOffer && p.offerPrice !== null && p.offerPrice > 0
+      ? p.offerPrice
+      : p.price;
   }
 
   /**
